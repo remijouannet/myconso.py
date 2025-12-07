@@ -1,0 +1,67 @@
+[project]
+name = "myconso"
+version = "0.0.1"
+description = "Async Python client to interact with myconso.net API"
+readme = "README.md"
+authors = [
+    {name = "Rémi Jouannet", email = "remijouannet@gmail.com"},
+]
+requires-python = "<4.0,>=3.10"
+packages = [
+    { include = "myconso" }
+]
+dependencies = [
+    "aiohttp",
+    "pyjwt[crypto]"
+]
+
+[project.urls]
+homepage = "https://github.com/remijouannet/myconso.py"
+repository = "https://github.com/remijouannet/myconso.py"
+
+[project.scripts]
+myconsocli = "myconso.cli:main"
+
+[dependency-groups]
+dev = [
+    "ruff",
+    "mypy",
+    "pytest>=9.0.1",
+    "pytest-asyncio>=1.3.0",
+]
+
+[tool.ruff.lint]
+select = [
+    # flake8-async
+    # "ASYNC",
+    # pycodestyle
+    "E",
+    # Pyflakes
+    "F",
+    # pyupgrade
+    "UP",
+    # flake8-bugbear
+    "B",
+    # flake8-simplify
+    "SIM",
+    # isort
+    "I",
+    # ruff
+    "RUF",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.sdist]
+include = [
+  "myconso/*",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["myconso"]
+only-packages = true
+
+[tool.mypy]
+exclude = "tests/"
