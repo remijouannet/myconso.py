@@ -1,11 +1,12 @@
 import argparse
 import asyncio
+import datetime
 import logging
 from pprint import pprint
 
 from myconso.api import MyConso
 
-log = logging.getLogger(__name__)
+logging.basicConfig(level=logging.DEBUG)
 
 
 async def cli():
@@ -25,25 +26,101 @@ async def cli():
         help="password",
     )
     parser.add_argument(
-        "--action",
-        dest="action",
+        "--login",
+        dest="login",
+        default=False,
+        action="store_true",
+        help="action",
+    )
+    parser.add_argument(
+        "--dashboard",
+        dest="dashboard",
+        default=False,
+        action="store_true",
+        help="action",
+    )
+    parser.add_argument(
+        "--counters",
+        dest="counters",
+        default=False,
+        action="store_true",
+        help="action",
+    )
+    parser.add_argument(
+        "--housing",
+        dest="housing",
+        default=False,
+        action="store_true",
+        help="action",
+    )
+    parser.add_argument(
+        "--user",
+        dest="user",
+        default=False,
+        action="store_true",
+        help="action",
+    )
+    parser.add_argument(
+        "--meter-info",
+        dest="meter_info",
+        default=None,
         type=str,
-        required=True,
+        help="action",
+    )
+    parser.add_argument(
+        "--meter",
+        dest="meter",
+        default=None,
+        type=str,
+        help="action",
+    )
+    parser.add_argument(
+        "--consumption",
+        dest="consumption",
+        default=None,
+        type=str,
+        help="action",
+    )
+    parser.add_argument(
+        "--start-date",
+        dest="start_date",
+        default=None,
+        type=lambda s: datetime.datetime.strptime(s, "%Y-%m-%d"),
+        help="action",
+    )
+    parser.add_argument(
+        "--end-date",
+        dest="end_date",
+        default=None,
+        type=lambda s: datetime.datetime.strptime(s, "%Y-%m-%d"),
         help="action",
     )
 
     args = parser.parse_args()
 
     async with MyConso(username=args.email, password=args.password) as myconso:
-        await myconso.login()
-        if args.action == "dashboard":
+        if args.login:
+            pprint(await myconso.login())
+        elif args.dashboard:
             pprint(await myconso.get_dashboard())
-        elif args.action == "counters":
+        elif args.counters:
             pprint(await myconso.get_counters())
-        elif args.action == "housing":
+        elif args.housing:
             pprint(await myconso.get_housing())
-        elif args.action == "user":
+        elif args.user:
             pprint(await myconso.get_user())
+        elif args.meter_info:
+            pprint(await myconso.get_meter_info(args.meter_info))
+        elif args.meter:
+            pprint(await myconso.get_meter(args.meter, args.start_date, args.end_date))
+        elif args.consumption:
+            pprint(
+                await myconso.get_consumption(
+                    args.consumption, args.start_date, args.end_date
+                )
+            )
+        else:
+            pprint(await myconso.get_dashboard())
 
 
 def main():

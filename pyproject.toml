@@ -12,7 +12,8 @@ packages = [
 ]
 dependencies = [
     "aiohttp",
-    "pyjwt[crypto]"
+    "aiohttp-retry>=2.9.1",
+    "pyjwt[crypto]",
 ]
 
 [project.urls]

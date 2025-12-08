@@ -4,41 +4,58 @@ import time
 from types import TracebackType
 
 from aiohttp import ClientHandlerType, ClientRequest, ClientResponse, ClientSession
+from aiohttp.client_exceptions import ClientResponseError
 
-from myconso.utils import decode_jwt, first_day_of_the_month, last_day_of_the_month
+from myconso.middlewares import exponential_backoff_middleware
+from myconso.utils import (
+    clean_hydra,
+    decode_jwt,
+    first_day_of_the_month,
+    last_day_of_the_month,
+)
 
 log = logging.getLogger(__name__)
 
 MYCONSO_API = "https://api.myconso.net"
-
+MYCONSO_USER_AGENT = "MyConso"
 
 class MyConso:
     username: str
     password: str
     session: ClientSession
+    token: str
+    refresh_token: str
     _counters: list[str]
-    _token: str
-    _refresh_token: str
 
     def __init__(
         self,
-        username: str,
-        password: str,
-        session: ClientSession | None = None,
+        username: str | None = None,
+        password: str | None = None,
         token: str | None = None,
         refresh_token: str | None = None,
     ) -> None:
-        self.username = username
-        self.password = password
-        self.session = session if session else ClientSession()
-        self.session.headers.update({"user-agent": "MyConso"})
-        self.lock = asyncio.Lock()
         if token and refresh_token:
-            self._token = token
-            self._token_exp, self._token_iat = decode_jwt(self._token)
-            self._refresh_token = refresh_token
+            self.token = token
+            self.token_exp, self.token_iat = decode_jwt(self.token)
+            self.refresh_token = refresh_token
         else:
-            self._token = None
+            self.token = None
+            self.refresh_token = None
+            self.username = username
+            self.password = password
+
+        self._housing = None
+        self._counters = []
+        self.lock = asyncio.Lock()
+        self.session = ClientSession(
+            base_url=MYCONSO_API,
+            headers={"user-agent": MYCONSO_USER_AGENT},
+            raise_for_status=True,
+            middlewares = (
+                exponential_backoff_middleware,
+                self._auth_refresh_middleware,
+            ),
+        )
 
     async def __aenter__(self):
         return self
@@ -54,102 +71,103 @@ class MyConso:
     async def close(self) -> None:
         await self.session.close()
 
-    async def login(self):
+    async def _auth_refresh_middleware(
+        self, req: ClientRequest, handler: ClientHandlerType
+    ) -> ClientResponse:
+        log.debug("middleware _auth_refresh_middleware %s", req.url)
+
+        epoch_now = time.time()
+        if epoch_now > self.token_exp:
+            log.debug(
+                "token is expired, refresh it, exp: %s, time: %s",
+                self.token_exp,
+                epoch_now,
+            )
+            async with self.lock:
+                await self.auth_refresh()
+
+        for _ in range(2):
+            resp = await handler(req)
+            if resp.status in {401, 403}:
+                log.debug("received %s, try to refresh the bearer token", resp.status)
+                async with self.lock:
+                    await self.auth_refresh()
+            else:
+                return resp
+
+        return resp
+
+    def check_auth(func):
+        async def wrapper(self, *args, **kwargs):
+            if not self.token and (self.username and self.password):
+                # class has been initialized with username/password
+                async with self.lock:
+                    await self.auth()
+            elif not self._housing and self.token and self.refresh_token:
+                # class has been initialized with token/refresh_token
+                async with self.lock:
+                    await self.auth_refresh()
+            return await func(self, *args, **kwargs)
+
+        return wrapper
+
+    async def auth(self):
         async with self.session.post(
-            f"{MYCONSO_API}/auth",
+            "/auth",
             json={
                 "email": self.username,
                 "password": self.password,
             },
             middlewares=(),
         ) as response:
-            token = await response.json()
-            self._user = token["user"]["email"]
-            self._housing = token["housing"]
-            self._token = token["token"]
-            self._refresh_token = token["refresh_token"]
+            res = await response.json()
+            self._user = res["user"]["email"]
+            self._housing = res["housing"]
+            self.token = res["token"]
+            self.refresh_token = res["refresh_token"]
+            self.token_exp, self.token_iat = decode_jwt(self.token)
+            self.session.headers.update({"authorization": f"Bearer {self.token}"})
 
-            self.token_exp, self.token_iat = decode_jwt(self._token)
+            log.debug("successful authentification for housing: %s", self._housing)
 
-            log.debug("successful login for housing: %s", self._housing)
+            return res
 
-            self.session.headers.update({"authorization": f"Bearer {self._token}"})
-            self.session.middlewares = (self._refresh_token_middleware,)
-
-            return token
-
-    def check_login(func):
-        async def wrapper(self, *args, **kwargs):
-            if not self._token:
-                await self.login()
-            return await func(self, *args, **kwargs)
-        return wrapper
-
-    async def _refresh_token_middleware(
-        self, req: ClientRequest, handler: ClientHandlerType
-    ) -> ClientResponse:
-        epoch_now = time.time()
-        if epoch_now > self.token_exp:
-            log.debug(
-                "token is expired, refresh it exp: %s, time: %s",
-                self.token_exp,
-                epoch_now,
-            )
-            async with self.lock:
-                await self.refresh_token()
-
-        for _ in range(2):
-            resp = await handler(req)
-            if resp.status != 401:
-                return resp
-            else:
-                log.debug("received 401, try to refresh the bearer token")
-                async with self.lock:
-                    await self.refresh_token()
-
-        return resp
-
-    async def refresh_token(self):
+    async def auth_refresh(self):
         async with self.session.post(
-            f"{MYCONSO_API}/auth/refresh",
+            "/auth/refresh",
             json={
-                "refresh_token": self._refresh_token,
+                "refresh_token": self.refresh_token,
             },
+            middlewares=(),
         ) as response:
-            token = await response.json()
+            res = await response.json()
+            self._user = res["user"]["email"]
+            self._housing = res["housing"]
+            self.token = res["token"]
+            self.refresh_token = res["refresh_token"]
+            self.token_exp, self.token_iat = decode_jwt(self.token)
+            self.session.headers["authorization"] = f"Bearer {self.token}"
 
-            self._user = token["user"]["email"]
-            self._housing = token["housing"]
-            self._token = token["token"]
-            self._refresh_token = token["refresh_token"]
+            return res
 
-            self.session.headers["authorization"] = f"Bearer {self._token}"
-
-            return token
-
+    @check_auth
     async def get_user(self):
-        async with self.session.get(
-            f"{MYCONSO_API}/secured/users/{self._user}"
-        ) as response:
-            res = await response.json()
-            return res
+        async with self.session.get(f"/secured/users/{self._user}") as response:
+            return clean_hydra(await response.json())
 
+    @check_auth
     async def get_housing(self):
-        async with self.session.get(
-            f"{MYCONSO_API}/secured/housing/{self._housing}"
-        ) as response:
-            res = await response.json()
-            return res
+        async with self.session.get(f"/secured/housing/{self._housing}") as response:
+            return clean_hydra(await response.json())
 
-    @check_login
+    @check_auth
     async def get_dashboard(self):
         async with self.session.get(
-            f"{MYCONSO_API}/secured/consumption/{self._housing}/dashboard"
+            f"/secured/consumption/{self._housing}/dashboard"
         ) as response:
-            res = await response.json()
-            return res
+            return clean_hydra(await response.json())
 
-    @check_login
+    @check_auth
     async def get_counters(self):
         if not self._counters:
             res = await self.get_dashboard()
@@ -165,7 +183,7 @@ class MyConso:
                     )
         return self._counters
 
-    @check_login
+    @check_auth
     async def get_consumption(self, fluidtype, startdate=None, enddate=None):
         if not startdate:
             startdate = first_day_of_the_month()
@@ -173,13 +191,15 @@ class MyConso:
             enddate = last_day_of_the_month()
 
         async with self.session.get(
-            f"{MYCONSO_API}/secured/consumption/{self._housing}/{fluidtype}/day",
-            params={"startDate": startdate, "endDate": enddate},
+            f"/secured/consumption/{self._housing}/{fluidtype}/day",
+            params={
+                "startDate": startdate.isoformat(timespec="milliseconds"),
+                "endDate": enddate.isoformat(timespec="milliseconds"),
+            },
         ) as response:
-            res = await response.json()
-            return res
+            return clean_hydra(await response.json())
 
-    @check_login
+    @check_auth
     async def get_meter_info(self, counter):
         if not self._counters:
             await self.get_counters()
@@ -187,12 +207,11 @@ class MyConso:
         for c in self._counters:
             if c["counter"] == counter:
                 async with self.session.get(
-                    f"{MYCONSO_API}/secured/meter/{self._housing}/{c['fluidType']}/{c['counter']}/info",
+                    f"/secured/meter/{self._housing}/{c['fluidType']}/{c['counter']}/info",
                 ) as response:
-                    res = await response.json()
-                    return res
+                    return clean_hydra(await response.json())
 
-    @check_login
+    @check_auth
     async def get_meter(self, counter, startdate=None, enddate=None):
         if not startdate:
             startdate = first_day_of_the_month()
@@ -205,8 +224,10 @@ class MyConso:
         for c in self._counters:
             if c["counter"] == counter:
                 async with self.session.get(
-                    f"{MYCONSO_API}/secured/meter/{self._housing}/{c['fluidType']}/{c['counter']}",
-                    params={"startDate": startdate, "endDate": enddate},
+                    f"/secured/meter/{self._housing}/{c['fluidType']}/{c['counter']}",
+                    params={
+                        "startDate": startdate.isoformat(timespec="milliseconds"),
+                        "endDate": enddate.isoformat(timespec="milliseconds"),
+                    },
                 ) as response:
-                    res = await response.json()
-                    return res
+                    return clean_hydra(await response.json())

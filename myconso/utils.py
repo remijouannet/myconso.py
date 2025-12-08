@@ -4,6 +4,14 @@ from datetime import datetime, timezone
 import jwt
 
 
+def clean_hydra(obj):
+    if isinstance(obj, dict):
+        keys_to_pop = [key for key in obj if key.startswith("@")]
+        for key in keys_to_pop:
+            obj.pop(key, None)
+    return obj
+
+
 def decode_jwt(token):
     token_jwt = jwt.decode(
         token,
@@ -16,26 +24,20 @@ def decode_jwt(token):
 
 def last_day_of_the_month():
     # last day of the current month
-    return (
-        datetime.now(timezone.utc)
-        .replace(
-            day=calendar.monthrange(
-                datetime.now(timezone.utc).year,
-                datetime.now(timezone.utc).month,
-            )[1],
-            hour=23,
-            minute=59,
-            second=59,
-            microsecond=0,
-        )
-        .isoformat(timespec="milliseconds")
+    return datetime.now(timezone.utc).replace(
+        day=calendar.monthrange(
+            datetime.now(timezone.utc).year,
+            datetime.now(timezone.utc).month,
+        )[1],
+        hour=23,
+        minute=59,
+        second=59,
+        microsecond=0,
     )
 
 
 def first_day_of_the_month():
     # first day of the current month
-    return (
-        datetime.now(timezone.utc)
-        .replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-        .isoformat(timespec="milliseconds")
+    return datetime.now(timezone.utc).replace(
+        day=1, hour=0, minute=0, second=0, microsecond=0
     )
