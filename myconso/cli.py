@@ -4,12 +4,12 @@ import datetime
 import logging
 from pprint import pprint
 
-from myconso.api import MyConso
+from myconso.api import MyConsoClient
 
 logging.basicConfig(level=logging.DEBUG)
 
 
-async def cli():
+async def cli() -> None:
     parser = argparse.ArgumentParser(description="myconso cli")
     parser.add_argument(
         "--email",
@@ -26,8 +26,8 @@ async def cli():
         help="password",
     )
     parser.add_argument(
-        "--login",
-        dest="login",
+        "--auth",
+        dest="auth",
         default=False,
         action="store_true",
         help="action",
@@ -98,9 +98,9 @@ async def cli():
 
     args = parser.parse_args()
 
-    async with MyConso(username=args.email, password=args.password) as myconso:
-        if args.login:
-            pprint(await myconso.login())
+    async with MyConsoClient(username=args.email, password=args.password) as myconso:
+        if args.auth:
+            pprint(await myconso.auth())
         elif args.dashboard:
             pprint(await myconso.get_dashboard())
         elif args.counters:
@@ -123,5 +123,5 @@ async def cli():
             pprint(await myconso.get_dashboard())
 
 
-def main():
+def main() -> None:
     asyncio.run(cli())

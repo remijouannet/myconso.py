@@ -1,10 +1,12 @@
 import calendar
-from datetime import datetime, timezone
+from datetime import datetime, timezone, date
 
 import jwt
 
 
-def clean_hydra(obj):
+def clean_json_ld(obj: dict) -> dict:
+    # json-ld add keys that starts with @
+    # we don't need thoses, pop them
     if isinstance(obj, dict):
         keys_to_pop = [key for key in obj if key.startswith("@")]
         for key in keys_to_pop:
@@ -12,17 +14,17 @@ def clean_hydra(obj):
     return obj
 
 
-def decode_jwt(token):
+def decode_jwt(token: str) -> tuple[int, int]:
     token_jwt = jwt.decode(
         token,
         algorithms=["RS256"],
-        key=None,
+        key="",
         options={"verify_signature": False},
     )
-    return token_jwt["exp"], token_jwt["iat"]
+    return (token_jwt["exp"], token_jwt["iat"])
 
 
-def last_day_of_the_month():
+def last_day_of_the_month() -> datetime:
     # last day of the current month
     return datetime.now(timezone.utc).replace(
         day=calendar.monthrange(
@@ -36,7 +38,7 @@ def last_day_of_the_month():
     )
 
 
-def first_day_of_the_month():
+def first_day_of_the_month() -> datetime:
     # first day of the current month
     return datetime.now(timezone.utc).replace(
         day=1, hour=0, minute=0, second=0, microsecond=0

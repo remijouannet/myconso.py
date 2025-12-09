@@ -29,6 +29,7 @@ dev = [
     "mypy",
     "pytest>=9.0.1",
     "pytest-asyncio>=1.3.0",
+    "pytest-aiohttp>=1.1.0",
 ]
 
 [tool.ruff.lint]
