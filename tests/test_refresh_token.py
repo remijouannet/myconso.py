@@ -1,16 +1,15 @@
 from __future__ import annotations
 
+import asyncio
 import logging
-import pytest
-from aiohttp import ClientHandlerType, ClientRequest, ClientResponse, ClientSession
-from aiohttp.client_exceptions import ClientResponseError
-from aiohttp import web
+import time
+
+import jwt
+from aiohttp import ClientSession, web
 from aiohttp.test_utils import AioHTTPTestCase
+
 from myconso.api import MyConsoClient
 from myconso.middlewares import exponential_backoff_middleware
-import jwt
-import time
-import asyncio
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -133,4 +132,3 @@ class TestMyConsoClientBackoff(AioHTTPTestCase):
 
             res = await c.get_dashboard()
             assert isinstance(res["currentMonth"], dict)
-

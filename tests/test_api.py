@@ -2,12 +2,10 @@ from __future__ import annotations
 
 import logging
 import os
-from unittest.mock import patch
 
 import pytest
 from aiohttp.client_exceptions import ClientResponseError
 
-import myconso.api
 from myconso.api import MyConsoClient
 
 logging.basicConfig(level=logging.DEBUG)
@@ -16,17 +14,22 @@ MYCONSO_HOUSING = os.getenv("MYCONSO_HOUSING")
 MYCONSO_EMAIL = os.getenv("MYCONSO_EMAIL")
 MYCONSO_PASSWORD = os.getenv("MYCONSO_PASSWORD")
 
+
 class TestMyConsoClientClient:
     @pytest.mark.asyncio
     async def test_get_dashboard(self):
-        async with MyConsoClient(username=MYCONSO_EMAIL, password=MYCONSO_PASSWORD) as c:
+        async with MyConsoClient(
+            username=MYCONSO_EMAIL, password=MYCONSO_PASSWORD
+        ) as c:
             await c.auth()
             res = await c.get_dashboard()
             assert isinstance(res["currentMonth"], dict)
 
     @pytest.mark.asyncio
     async def test_token(self):
-        async with MyConsoClient(username=MYCONSO_EMAIL, password=MYCONSO_PASSWORD) as c:
+        async with MyConsoClient(
+            username=MYCONSO_EMAIL, password=MYCONSO_PASSWORD
+        ) as c:
             res = await c.auth()
             assert res["company"] == "proxiserve"
             token = res["token"]

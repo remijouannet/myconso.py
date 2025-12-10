@@ -1,9 +1,9 @@
 import asyncio
 import logging
 import time
-from types import TracebackType
-from typing import Callable, Any
 from datetime import datetime
+from types import TracebackType
+
 from aiohttp import ClientHandlerType, ClientRequest, ClientResponse, ClientSession
 
 from myconso.middlewares import exponential_backoff_middleware
@@ -19,6 +19,7 @@ log = logging.getLogger(__name__)
 MYCONSO_API = "https://api.myconso.net"
 MYCONSO_USER_AGENT = "MyConso"
 
+
 def check_auth(func):
     async def wrapper(self, *args, **kwargs):
         if not self.token and (self.username and self.password):
@@ -30,7 +31,9 @@ def check_auth(func):
             async with self.lock:
                 await self.auth_refresh()
         return await func(self, *args, **kwargs)
+
     return wrapper
+
 
 class MyConsoClient:
     username: str | None
@@ -184,7 +187,12 @@ class MyConsoClient:
         return self._counters
 
     @check_auth
-    async def get_consumption(self, fluidtype: str, startdate: datetime | None = None, enddate: datetime | None = None) -> dict | None:
+    async def get_consumption(
+        self,
+        fluidtype: str,
+        startdate: datetime | None = None,
+        enddate: datetime | None = None,
+    ) -> dict | None:
         if not startdate:
             startdate = first_day_of_the_month()
         if not enddate:
@@ -213,7 +221,12 @@ class MyConsoClient:
         return None
 
     @check_auth
-    async def get_meter(self, counter: str, startdate: datetime | None = None, enddate: datetime | None = None) -> dict | None:
+    async def get_meter(
+        self,
+        counter: str,
+        startdate: datetime | None = None,
+        enddate: datetime | None = None,
+    ) -> dict | None:
         if not startdate:
             startdate = first_day_of_the_month()
         if not enddate:

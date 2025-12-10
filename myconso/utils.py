@@ -1,5 +1,5 @@
 import calendar
-from datetime import datetime, timezone, date
+from datetime import datetime, timezone
 
 import jwt
 

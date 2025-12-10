@@ -6,7 +6,7 @@ readme = "README.md"
 authors = [
     {name = "Rémi Jouannet", email = "remijouannet@gmail.com"},
 ]
-requires-python = "<4.0,>=3.10"
+requires-python = ">=3.10"
 packages = [
     { include = "myconso" }
 ]
@@ -32,10 +32,27 @@ dev = [
     "pytest-aiohttp>=1.1.0",
 ]
 
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.sdist]
+include = [
+  "myconso/*",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["myconso"]
+only-packages = true
+
+[tool.ruff]
+line-length = 88
+include = ["tests/*.py", "myconso/*.py"]
+
 [tool.ruff.lint]
 select = [
     # flake8-async
-    # "ASYNC",
+    "ASYNC",
     # pycodestyle
     "E",
     # Pyflakes
@@ -50,20 +67,10 @@ select = [
     "I",
     # ruff
     "RUF",
+    # flake8-quotes  
+    "Q"
 ]
-
-[build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
-
-[tool.hatch.build.targets.sdist]
-include = [
-  "myconso/*",
-]
-
-[tool.hatch.build.targets.wheel]
-packages = ["myconso"]
-only-packages = true
 
 [tool.mypy]
 exclude = "tests/"
+files = "myconso/*.py"

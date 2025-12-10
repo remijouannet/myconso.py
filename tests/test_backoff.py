@@ -1,15 +1,16 @@
 from __future__ import annotations
 
 import logging
+import time
+
+import jwt
 import pytest
-from aiohttp import ClientHandlerType, ClientRequest, ClientResponse, ClientSession
+from aiohttp import ClientSession, web
 from aiohttp.client_exceptions import ClientResponseError
-from aiohttp import web
 from aiohttp.test_utils import AioHTTPTestCase
+
 from myconso.api import MyConsoClient
 from myconso.middlewares import exponential_backoff_middleware
-import jwt
-import time
 
 logging.basicConfig(level=logging.DEBUG)
 
