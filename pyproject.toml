@@ -68,7 +68,7 @@ select = [
     "I",
     # ruff
     "RUF",
-    # flake8-quotes  
+    # flake8-quotes
     "Q"
 ]
 
