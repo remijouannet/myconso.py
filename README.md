@@ -1,7 +1,7 @@
 
-# Async Python client for myconso (proxiserve) API
+# Unofficial async python client for myconso (proxiserve) API
 
-A fully asynchronous API client for the myconso API behind the [Myconso APP](https://play.google.com/store/apps/details?id=fr.proxiserve.myconso&hl=fr). To easily retrive information about your 
+Unofficial fully asynchronous API client for the myconso api behind the [Myconso application](https://play.google.com/store/apps/details?id=fr.proxiserve.myconso&hl=fr). To easily retrieve information about your counters (waterhot, watercold, thermal, ...)
 
 ## Installation
 
