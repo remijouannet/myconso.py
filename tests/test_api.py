@@ -3,6 +3,7 @@ from __future__ import annotations
 import logging
 import os
 
+import aiohttp.web
 import pytest
 from aiohttp.client_exceptions import ClientResponseError
 
@@ -45,4 +46,4 @@ class TestMyConsoClientClient:
             with pytest.raises(ClientResponseError) as exc_info:
                 await c.auth()
             assert exc_info.value.message == "Unauthorized"
-            assert exc_info.value.status == 401
+            assert exc_info.value.status == aiohttp.web.HTTPUnauthorized.status_code

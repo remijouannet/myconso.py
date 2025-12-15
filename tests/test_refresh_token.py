@@ -48,7 +48,8 @@ class TestMyConsoClientBackoff(AioHTTPTestCase):
 
         async def dashboard(request):
             self.ERROR_401 += 1
-            if self.ERROR_401 < 2:
+            rate_401 = 2
+            if rate_401 > self.ERROR_401:
                 return web.Response(status=401)
 
             return web.json_response(

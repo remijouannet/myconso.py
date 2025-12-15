@@ -34,7 +34,8 @@ class TestMyConsoClientBackoff(AioHTTPTestCase):
 
         async def dashboard(request):
             self.ERROR_429 += 1
-            if self.ERROR_429 < 4:
+            rate_429 = 4
+            if rate_429 > self.ERROR_429:
                 return web.Response(status=429)
 
             return web.json_response(
@@ -95,7 +96,7 @@ class TestMyConsoClientBackoff(AioHTTPTestCase):
             )
             with pytest.raises(ClientResponseError) as exc_info:
                 await c.get_dashboard()
-            assert exc_info.value.status == 429
+            assert exc_info.value.status == web.HTTPTooManyRequests.status_code
 
             res = await c.get_dashboard()
             assert isinstance(res["currentMonth"], dict)

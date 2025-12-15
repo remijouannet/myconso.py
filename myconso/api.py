@@ -122,8 +122,8 @@ class MyConsoClient:
                 "password": self.password,
             },
             middlewares=(),
-        ) as res:
-            res = await res.json()
+        ) as response:
+            res = await response.json()
             self._user = res["user"]["email"]
             self._housing = res["housing"]
             self.token = res["token"]
@@ -142,8 +142,8 @@ class MyConsoClient:
                 "refresh_token": self.refresh_token,
             },
             middlewares=(),
-        ) as res:
-            res = await res.json()
+        ) as response:
+            res = await response.json()
             self._user = res["user"]["email"]
             self._housing = res["housing"]
             self.token = res["token"]

@@ -108,7 +108,7 @@ async def cli() -> None:
 
     if args.debug:
         logging.getLogger().setLevel(logging.DEBUG)
-        log.debug('debug enabled')
+        log.debug("debug enabled")
 
     async with MyConsoClient(username=args.email, password=args.password) as myconso:
         if args.auth:
