@@ -215,7 +215,7 @@ class MyConsoClient:
         for c in self._counters:
             if c["counter"] == counter:
                 async with self.session.get(
-                    f"/secured/meter/{self._housing}/{c['fluidType']}/{c['counter']}/info",
+                    f"/secured/meter/{self._housing}/{c['meterType']}/{c['counter']}/info",
                 ) as res:
                     return clean_json_ld(await res.json())
         return None
@@ -238,7 +238,7 @@ class MyConsoClient:
         for c in self._counters:
             if c["counter"] == counter:
                 async with self.session.get(
-                    f"/secured/meter/{self._housing}/{c['fluidType']}/{c['counter']}",
+                    f"/secured/meter/{self._housing}/{c['meterType']}/{c['counter']}",
                     params={
                         "startDate": startdate.isoformat(timespec="milliseconds"),
                         "endDate": enddate.isoformat(timespec="milliseconds"),
