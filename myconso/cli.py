@@ -1,8 +1,8 @@
 import argparse
 import asyncio
 import datetime
+import json
 import logging
-from pprint import pprint
 
 from myconso.api import MyConsoClient
 
@@ -112,27 +112,35 @@ async def cli() -> None:
 
     async with MyConsoClient(username=args.email, password=args.password) as myconso:
         if args.auth:
-            pprint(await myconso.auth())
+            print(json.dumps(await myconso.auth(), indent=4))
         elif args.dashboard:
-            pprint(await myconso.get_dashboard())
+            print(json.dumps(await myconso.get_dashboard(), indent=4))
         elif args.counters:
-            pprint(await myconso.get_counters())
+            print(json.dumps(await myconso.get_counters(), indent=4))
         elif args.housing:
-            pprint(await myconso.get_housing())
+            print(json.dumps(await myconso.get_housing(), indent=4))
         elif args.user:
-            pprint(await myconso.get_user())
+            print(json.dumps(await myconso.get_user(), indent=4))
         elif args.meter_info:
-            pprint(await myconso.get_meter_info(args.meter_info))
+            print(json.dumps(await myconso.get_meter_info(args.meter_info), indent=4))
         elif args.meter:
-            pprint(await myconso.get_meter(args.meter, args.start_date, args.end_date))
+            print(
+                json.dumps(
+                    await myconso.get_meter(args.meter, args.start_date, args.end_date),
+                    indent=4,
+                )
+            )
         elif args.consumption:
-            pprint(
-                await myconso.get_consumption(
-                    args.consumption, args.start_date, args.end_date
+            print(
+                json.dumps(
+                    await myconso.get_consumption(
+                        args.consumption, args.start_date, args.end_date
+                    ),
+                    indent=4,
                 )
             )
         else:
-            pprint(await myconso.get_dashboard())
+            print(json.dumps(await myconso.get_dashboard(), indent=4))
 
 
 def main() -> None:

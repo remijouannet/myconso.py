@@ -1,6 +1,6 @@
 [project]
 name = "myconso"
-version = "0.0.2"
+version = "0.0.3"
 description = "Async Python client to interact with myconso.net API"
 readme = "README.md"
 authors = [
