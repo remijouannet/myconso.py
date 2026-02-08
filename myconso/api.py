@@ -192,7 +192,7 @@ class MyConsoClient:
             return clean_json_ld(await res.json())
 
     @check_auth
-    async def getcounters(self) -> list[dict]:
+    async def get_counters(self) -> list[dict]:
         if not self.counters:
             for housing in self.housings:
                 res = await self.get_dashboard(housing)
@@ -237,7 +237,7 @@ class MyConsoClient:
         self, counter: str, housing: str | None = None
     ) -> dict | None:
         if not self.counters:
-            await self.getcounters()
+            await self.get_counters()
 
         housing = housing if housing else self.housing
         for c in self.counters:
@@ -262,7 +262,7 @@ class MyConsoClient:
             enddate = last_day_of_the_month()
 
         if not self.counters:
-            await self.getcounters()
+            await self.get_counters()
 
         housing = housing if housing else self.housing
         for c in self.counters:
