@@ -5,7 +5,9 @@ import logging
 import time
 
 import jwt
+import pytest
 from aiohttp import ClientSession, web
+from aiohttp.client_exceptions import ClientResponseError
 from aiohttp.test_utils import AioHTTPTestCase
 
 from myconso.api import MyConsoClient
@@ -27,7 +29,11 @@ class TestMyConsoClientBackoff(AioHTTPTestCase):
                         "secret",
                         algorithm="HS256",
                     ),
-                    "user": {"email": "test@test.com"},
+                    "user": {
+                        "email": "test@test.com",
+                        "userIdentifier": "test@test.com",
+                        "housingIds": ["7552325423"],
+                    },
                 }
             )
 
@@ -42,7 +48,11 @@ class TestMyConsoClientBackoff(AioHTTPTestCase):
                         "secret",
                         algorithm="HS256",
                     ),
-                    "user": {"email": "test@test.com"},
+                    "user": {
+                        "email": "test@test.com",
+                        "userIdentifier": "test@test.com",
+                        "housingIds": ["7552325423"],
+                    },
                 }
             )
 
@@ -133,3 +143,20 @@ class TestMyConsoClientBackoff(AioHTTPTestCase):
 
             res = await c.get_dashboard()
             assert isinstance(res["currentMonth"], dict)
+
+    async def test_refresh_token_3(self):
+        async with MyConsoClient(
+            username="aaa", password="aaaa", refresh_middleware=False
+        ) as c:
+            # close the existing session before creating a new one
+            await c.session.close()
+            c.session = ClientSession(
+                base_url=self.client.make_url(""),
+                headers={"user-agent": "aaa"},
+                raise_for_status=True,
+                middlewares=(exponential_backoff_middleware,),
+            )
+            with pytest.raises(ClientResponseError) as exc_info:
+                await c.get_dashboard()
+            assert exc_info.value.message == "Unauthorized"
+            assert exc_info.value.status == web.HTTPUnauthorized.status_code

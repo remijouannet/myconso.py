@@ -69,6 +69,20 @@ async def cli() -> None:
         help="GET /secured/users/{user}",
     )
     parser.add_argument(
+        "--housings",
+        dest="housings",
+        default=False,
+        action="store_true",
+        help="GET /secured/{user}/housings",
+    )
+    parser.add_argument(
+        "--address",
+        dest="address",
+        default=False,
+        action="store_true",
+        help="GET /secured/{housing}/address",
+    )
+    parser.add_argument(
         "--meter-info",
         dest="meter_info",
         default=None,
@@ -88,6 +102,13 @@ async def cli() -> None:
         default=None,
         type=str,
         help="/secured/consumption/{housing}/{fluidtype}/day",
+    )
+    parser.add_argument(
+        "--housing-id",
+        dest="housing_id",
+        default=None,
+        type=str,
+        help="Specify a housing_id",
     )
     parser.add_argument(
         "--start-date",
@@ -114,19 +135,38 @@ async def cli() -> None:
         if args.auth:
             print(json.dumps(await myconso.auth(), indent=4))
         elif args.dashboard:
-            print(json.dumps(await myconso.get_dashboard(), indent=4))
+            print(
+                json.dumps(
+                    await myconso.get_dashboard(housing=args.housing_id), indent=4
+                )
+            )
         elif args.counters:
             print(json.dumps(await myconso.get_counters(), indent=4))
         elif args.housing:
-            print(json.dumps(await myconso.get_housing(), indent=4))
+            print(
+                json.dumps(await myconso.get_housing(housing=args.housing_id), indent=4)
+            )
         elif args.user:
             print(json.dumps(await myconso.get_user(), indent=4))
+        elif args.housings:
+            print(json.dumps(await myconso.get_housings(), indent=4))
+        elif args.address:
+            print(
+                json.dumps(await myconso.get_address(housing=args.housing_id), indent=4)
+            )
         elif args.meter_info:
-            print(json.dumps(await myconso.get_meter_info(args.meter_info), indent=4))
+            print(
+                json.dumps(
+                    await myconso.get_meter_info(args.meter_info, args.housing_id),
+                    indent=4,
+                )
+            )
         elif args.meter:
             print(
                 json.dumps(
-                    await myconso.get_meter(args.meter, args.start_date, args.end_date),
+                    await myconso.get_meter(
+                        args.meter, args.housing_id, args.start_date, args.end_date
+                    ),
                     indent=4,
                 )
             )
@@ -134,13 +174,16 @@ async def cli() -> None:
             print(
                 json.dumps(
                     await myconso.get_consumption(
-                        args.consumption, args.start_date, args.end_date
+                        args.consumption,
+                        args.housing_id,
+                        args.start_date,
+                        args.end_date,
                     ),
                     indent=4,
                 )
             )
         else:
-            print(json.dumps(await myconso.get_dashboard(), indent=4))
+            print(json.dumps(await myconso.get_dashboard(args.housing_id), indent=4))
 
 
 def main() -> None:

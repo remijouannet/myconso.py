@@ -28,7 +28,11 @@ class TestMyConsoClientBackoff(AioHTTPTestCase):
                         "secret",
                         algorithm="HS256",
                     ),
-                    "user": {"email": "test@test.com"},
+                    "user": {
+                        "email": "test@test.com",
+                        "userIdentifier": "test@test.com",
+                        "housingIds": ["7552325423"],
+                    },
                 }
             )
 

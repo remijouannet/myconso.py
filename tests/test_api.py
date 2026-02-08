@@ -27,6 +27,14 @@ class TestMyConsoClientClient:
             assert isinstance(res["currentMonth"], dict)
 
     @pytest.mark.asyncio
+    async def test_get_user(self):
+        async with MyConsoClient(
+            username=MYCONSO_EMAIL, password=MYCONSO_PASSWORD
+        ) as c:
+            res = await c.get_user()
+            assert res["id"] == MYCONSO_EMAIL
+
+    @pytest.mark.asyncio
     async def test_token(self):
         async with MyConsoClient(
             username=MYCONSO_EMAIL, password=MYCONSO_PASSWORD
