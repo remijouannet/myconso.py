@@ -17,6 +17,7 @@ async def main():
 
     async with MyConsoClient(token=token, refresh_token=refresh_token) as c:
         pprint(await c.get_housing())
+        pprint(await c.get_housing())
 
 
 asyncio.run(main())

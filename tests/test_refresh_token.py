@@ -5,9 +5,7 @@ import logging
 import time
 
 import jwt
-import pytest
 from aiohttp import ClientSession, web
-from aiohttp.client_exceptions import ClientResponseError
 from aiohttp.test_utils import AioHTTPTestCase
 
 from myconso.api import MyConsoClient
@@ -57,11 +55,6 @@ class TestMyConsoClientBackoff(AioHTTPTestCase):
             )
 
         async def dashboard(request):
-            self.ERROR_401 += 1
-            rate_401 = 2
-            if rate_401 > self.ERROR_401:
-                return web.Response(status=401)
-
             return web.json_response(
                 {
                     "currentMonth": {
@@ -99,12 +92,31 @@ class TestMyConsoClientBackoff(AioHTTPTestCase):
                 }
             )
 
+        async def housing(request):
+            return web.json_response(
+                {
+                    "housingId": "7552325423",
+                    "name": "Logement 10",
+                    "entryDate": "2024-05-30T00:00:00+00:00",
+                    "surface": 40,
+                    "numberInhabitants": 2,
+                    "housingType": "t2",
+                    "energyLabel": "A",
+                    "company": "proxiserve",
+                    "proofStatus": "validated",
+                    "isActive": True,
+                    "proofUploadDate": "2025-04-05T20:26:24+00:00",
+                    "createdAt": "2025-04-02T10:10:58+00:00",
+                }
+            )
+
         self.ERROR_401 = 0
 
         app = web.Application()
         app.router.add_post("/auth", auth)
         app.router.add_post("/auth/refresh", auth_refresh)
         app.router.add_get("/secured/consumption/7552325423/dashboard", dashboard)
+        app.router.add_get("/secured/housing/7552325423", housing)
         return app
 
     async def test_refresh_token_1(self):
@@ -144,19 +156,27 @@ class TestMyConsoClientBackoff(AioHTTPTestCase):
             res = await c.get_dashboard()
             assert isinstance(res["currentMonth"], dict)
 
-    async def test_refresh_token_3(self):
-        async with MyConsoClient(
-            username="aaa", password="aaaa", refresh_middleware=False
-        ) as c:
+    async def test_refresh_token_4(self):
+        async with MyConsoClient(username="aaa", password="aaaa") as c:
             # close the existing session before creating a new one
             await c.session.close()
             c.session = ClientSession(
                 base_url=self.client.make_url(""),
                 headers={"user-agent": "aaa"},
                 raise_for_status=True,
-                middlewares=(exponential_backoff_middleware,),
+                middlewares=(
+                    exponential_backoff_middleware,
+                    c._auth_refresh_middleware,
+                ),
             )
-            with pytest.raises(ClientResponseError) as exc_info:
-                await c.get_dashboard()
-            assert exc_info.value.message == "Unauthorized"
-            assert exc_info.value.status == web.HTTPUnauthorized.status_code
+            res = await c.get_housing()
+            assert res["housingId"] == "7552325423"
+
+            token1 = c.token
+
+            await asyncio.sleep(4)
+
+            assert token1 == c.token
+            res = await c.get_housing()
+            assert token1 != c.token
+            assert res["housingId"] == "7552325423"

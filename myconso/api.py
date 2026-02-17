@@ -19,6 +19,8 @@ log = logging.getLogger(__name__)
 MYCONSO_API = "https://api.myconso.net"
 MYCONSO_USER_AGENT = "MyConso"
 
+TOKEN_EXP_DELAY = 10
+
 
 def check_auth(func):
     async def wrapper(self, *args, **kwargs):
@@ -102,23 +104,18 @@ class MyConsoClient:
         self, req: ClientRequest, handler: ClientHandlerType
     ) -> ClientResponse:
         epoch_now = time.time()
-        if epoch_now > self.token_exp:
+        if epoch_now >= self.token_exp - TOKEN_EXP_DELAY:
             log.debug(
                 "token is expired, refresh it, exp: %s, time: %s",
                 self.token_exp,
                 epoch_now,
             )
             async with self.lock:
-                await self.auth_refresh()
+                res_token = await self.auth_refresh()
+                if token := res_token.get("token"):
+                    req.headers["authorization"] = f"Bearer {token}"
 
-        for _ in range(2):
-            res = await handler(req)
-            if res.status in {401}:
-                log.debug("received %s, try to refresh the bearer token", res.status)
-                async with self.lock:
-                    await self.auth_refresh()
-            else:
-                return res
+        res = await handler(req)
 
         return res
 
@@ -159,7 +156,12 @@ class MyConsoClient:
             self.token = res["token"]
             self.refresh_token = res["refresh_token"]
             self.token_exp, self.token_iat = decode_jwt(self.token)
-            self.session.headers["authorization"] = f"Bearer {self.token}"
+            self.session.headers.update({"authorization": f"Bearer {self.token}"})
+
+            log.debug(
+                "successful authentification for housing (auth_refresh): %s",
+                self.housing,
+            )
 
             return res
 
