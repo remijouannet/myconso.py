@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import asyncio
-import logging
 import time
 
 import jwt
@@ -10,8 +9,6 @@ from aiohttp.test_utils import AioHTTPTestCase
 
 from myconso.api import MyConsoClient
 from myconso.middlewares import exponential_backoff_middleware
-
-logging.basicConfig(level=logging.DEBUG)
 
 
 class TestMyConsoClientBackoff(AioHTTPTestCase):
@@ -128,8 +125,8 @@ class TestMyConsoClientBackoff(AioHTTPTestCase):
                 headers={"user-agent": "aaa"},
                 raise_for_status=True,
                 middlewares=(
-                    exponential_backoff_middleware,
                     c._auth_refresh_middleware,
+                    exponential_backoff_middleware,
                 ),
             )
             res = await c.get_dashboard()
@@ -144,10 +141,15 @@ class TestMyConsoClientBackoff(AioHTTPTestCase):
                 headers={"user-agent": "aaa"},
                 raise_for_status=True,
                 middlewares=(
-                    exponential_backoff_middleware,
                     c._auth_refresh_middleware,
+                    exponential_backoff_middleware,
                 ),
             )
+            res = await c.get_dashboard()
+            assert isinstance(res["currentMonth"], dict)
+
+            await asyncio.sleep(4)
+
             res = await c.get_dashboard()
             assert isinstance(res["currentMonth"], dict)
 
@@ -165,8 +167,8 @@ class TestMyConsoClientBackoff(AioHTTPTestCase):
                 headers={"user-agent": "aaa"},
                 raise_for_status=True,
                 middlewares=(
-                    exponential_backoff_middleware,
                     c._auth_refresh_middleware,
+                    exponential_backoff_middleware,
                 ),
             )
             res = await c.get_housing()

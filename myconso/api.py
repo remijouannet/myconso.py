@@ -4,7 +4,13 @@ import time
 from datetime import datetime
 from types import TracebackType
 
-from aiohttp import ClientHandlerType, ClientRequest, ClientResponse, ClientSession
+from aiohttp import (
+    ClientHandlerType,
+    ClientRequest,
+    ClientResponse,
+    ClientSession,
+    DummyCookieJar,
+)
 
 from myconso.middlewares import exponential_backoff_middleware
 from myconso.utils import (
@@ -75,15 +81,17 @@ class MyConsoClient:
 
         self.lock = asyncio.Lock()
 
-        middlewares = [exponential_backoff_middleware]
+        middlewares = []
         if refresh_middleware:
             middlewares += [self._auth_refresh_middleware]
+        middlewares += [exponential_backoff_middleware]
 
         self.session = ClientSession(
             base_url=MYCONSO_API,
             headers={"user-agent": MYCONSO_USER_AGENT},
             raise_for_status=True,
             middlewares=middlewares,
+            cookie_jar=DummyCookieJar(),
         )
 
     async def __aenter__(self) -> "MyConsoClient":
@@ -104,6 +112,7 @@ class MyConsoClient:
         self, req: ClientRequest, handler: ClientHandlerType
     ) -> ClientResponse:
         epoch_now = time.time()
+        token = self.token
         if epoch_now >= self.token_exp - TOKEN_EXP_DELAY:
             log.debug(
                 "token is expired, refresh it, exp: %s, time: %s",
@@ -111,10 +120,11 @@ class MyConsoClient:
                 epoch_now,
             )
             async with self.lock:
-                res_token = await self.auth_refresh()
-                if token := res_token.get("token"):
-                    req.headers["authorization"] = f"Bearer {token}"
+                if token == self.token:
+                    res_token = await self.auth_refresh()
+                    token = res_token.get("token")
 
+        req.headers["authorization"] = f"Bearer {self.token}"
         res = await handler(req)
 
         return res
@@ -135,7 +145,6 @@ class MyConsoClient:
             self.token = res["token"]
             self.refresh_token = res["refresh_token"]
             self.token_exp, self.token_iat = decode_jwt(self.token)
-            self.session.headers.update({"authorization": f"Bearer {self.token}"})
 
             log.debug("successful authentification for housing: %s", self.housing)
 
@@ -156,10 +165,9 @@ class MyConsoClient:
             self.token = res["token"]
             self.refresh_token = res["refresh_token"]
             self.token_exp, self.token_iat = decode_jwt(self.token)
-            self.session.headers.update({"authorization": f"Bearer {self.token}"})
 
             log.debug(
-                "successful authentification for housing (auth_refresh): %s",
+                "successful refresh authentification for housing: %s",
                 self.housing,
             )
 

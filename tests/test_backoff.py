@@ -94,8 +94,8 @@ class TestMyConsoClientBackoff(AioHTTPTestCase):
                 headers={"user-agent": "aaa"},
                 raise_for_status=True,
                 middlewares=(
-                    exponential_backoff_middleware,
                     c._auth_refresh_middleware,
+                    exponential_backoff_middleware,
                 ),
             )
             with pytest.raises(ClientResponseError) as exc_info:
