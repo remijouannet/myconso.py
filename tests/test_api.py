@@ -30,7 +30,7 @@ class TestMyConsoClientClient:
         ) as c:
             await c.auth()
             res = await c.get_dashboard()
-            assert isinstance(res["currentMonth"], dict)
+            assert hasattr(res.currentMonth, "startDate")
 
     @pytest.mark.asyncio
     async def test_get_user(self):
@@ -38,7 +38,7 @@ class TestMyConsoClientClient:
             username=MYCONSO_EMAIL, password=MYCONSO_PASSWORD
         ) as c:
             res = await c.get_user()
-            assert res["id"] == MYCONSO_EMAIL
+            assert res.id == MYCONSO_EMAIL
 
     @pytest.mark.asyncio
     async def test_token(self):
@@ -46,13 +46,13 @@ class TestMyConsoClientClient:
             username=MYCONSO_EMAIL, password=MYCONSO_PASSWORD
         ) as c:
             res = await c.auth()
-            assert res["company"] == "proxiserve"
-            token = res["token"]
-            refresh_token = res["refresh_token"]
+            assert res.company == "proxiserve"
+            token = res.token
+            refresh_token = res.refresh_token
 
         async with MyConsoClient(token=token, refresh_token=refresh_token) as c:
             res = await c.get_housing()
-            assert res["housingId"] == MYCONSO_HOUSING
+            assert res.housingId == MYCONSO_HOUSING
 
     @pytest.mark.asyncio
     async def test_failed_auth(self):

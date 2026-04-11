@@ -10,7 +10,7 @@ logging.basicConfig(level=logging.INFO)
 log = logging.getLogger(__name__)
 
 
-async def cli() -> None:
+async def cli() -> None:  # noqa: PLR0912
     parser = argparse.ArgumentParser(description="myconso cli")
     parser.add_argument(
         "--debug",
@@ -133,57 +133,65 @@ async def cli() -> None:
 
     async with MyConsoClient(username=args.email, password=args.password) as myconso:
         if args.auth:
-            print(json.dumps(await myconso.auth(), indent=4))
+            print(json.dumps((await myconso.auth()).model_dump(), indent=4))
         elif args.dashboard:
             print(
                 json.dumps(
-                    await myconso.get_dashboard(housing=args.housing_id), indent=4
+                    (await myconso.get_dashboard(housing=args.housing_id)).model_dump(),
+                    indent=4,
                 )
             )
         elif args.counters:
-            print(json.dumps(await myconso.get_counters(), indent=4))
+            print(json.dumps((await myconso.get_counters()).model_dump(), indent=4))
         elif args.housing:
             print(
-                json.dumps(await myconso.get_housing(housing=args.housing_id), indent=4)
+                json.dumps(
+                    (await myconso.get_housing(housing=args.housing_id)).model_dump(),
+                    indent=4,
+                )
             )
         elif args.user:
-            print(json.dumps(await myconso.get_user(), indent=4))
+            print(json.dumps((await myconso.get_user()).model_dump(), indent=4))
         elif args.housings:
-            print(json.dumps(await myconso.get_housings(), indent=4))
+            print(json.dumps((await myconso.get_housings()).model_dump(), indent=4))
         elif args.address:
             print(
-                json.dumps(await myconso.get_address(housing=args.housing_id), indent=4)
+                json.dumps(
+                    (await myconso.get_address(housing=args.housing_id)).model_dump(),
+                    indent=4,
+                )
             )
         elif args.meter_info:
-            print(
-                json.dumps(
-                    await myconso.get_meter_info(args.meter_info, args.housing_id),
-                    indent=4,
-                )
-            )
+            result = await myconso.get_meter_info(args.meter_info, args.housing_id)
+            if result:
+                print(json.dumps(result.model_dump(), indent=4))
         elif args.meter:
-            print(
-                json.dumps(
-                    await myconso.get_meter(
-                        args.meter, args.housing_id, args.start_date, args.end_date
-                    ),
-                    indent=4,
-                )
+            result = await myconso.get_meter(
+                args.meter, args.housing_id, args.start_date, args.end_date
             )
+            if result:
+                print(json.dumps(result.model_dump(), indent=4))
         elif args.consumption:
             print(
                 json.dumps(
-                    await myconso.get_consumption(
-                        args.consumption,
-                        args.housing_id,
-                        args.start_date,
-                        args.end_date,
-                    ),
+                    (
+                        await myconso.get_consumption(
+                            args.consumption,
+                            args.housing_id,
+                            args.start_date,
+                            args.end_date,
+                        )
+                    ).model_dump(),
                     indent=4,
                 )
             )
         else:
-            print(json.dumps(await myconso.get_dashboard(args.housing_id), indent=4))
+            print(
+                json.dumps(
+                    (await myconso.get_dashboard(args.housing_id)).model_dump(),
+                    indent=4,
+                )
+            )
 
 
 def main() -> None:

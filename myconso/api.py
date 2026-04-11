@@ -13,6 +13,20 @@ from aiohttp import (
 )
 
 from myconso.middlewares import exponential_backoff_middleware
+
+# Typed models for API responses
+from myconso.models import (
+    Address,
+    Auth,
+    Consumption,
+    Counter,
+    Dashboard,
+    Housing,
+    Housings,
+    Meter,
+    MeterInfo,
+    User,
+)
 from myconso.utils import (
     clean_json_ld,
     decode_jwt,
@@ -122,14 +136,14 @@ class MyConsoClient:
             async with self.lock:
                 if token == self.token:
                     res_token = await self.auth_refresh()
-                    token = res_token.get("token")
+                    token = res_token.token
 
         req.headers["authorization"] = f"Bearer {self.token}"
         res = await handler(req)
 
         return res
 
-    async def auth(self) -> dict:
+    async def auth(self) -> Auth:
         async with self.session.post(
             "/auth",
             json={
@@ -138,19 +152,19 @@ class MyConsoClient:
             },
             middlewares=(),
         ) as response:
-            res = await response.json()
-            self.user = res["user"]["userIdentifier"]
-            self.housings = res["user"]["housingIds"]
-            self.housing = res["housing"]
-            self.token = res["token"]
-            self.refresh_token = res["refresh_token"]
+            res = Auth.model_validate(await response.json())
+            self.user = res.user.userIdentifier
+            self.housings = res.user.housingIds
+            self.housing = res.housing
+            self.token = res.token
+            self.refresh_token = res.refresh_token
             self.token_exp, self.token_iat = decode_jwt(self.token)
 
             log.debug("successful authentification for housing: %s", self.housing)
 
             return res
 
-    async def auth_refresh(self) -> dict:
+    async def auth_refresh(self) -> Auth:
         async with self.session.post(
             "/auth/refresh",
             json={
@@ -158,12 +172,14 @@ class MyConsoClient:
             },
             middlewares=(),
         ) as response:
-            res = await response.json()
-            self.user = res["user"]["userIdentifier"]
-            self.housings = res["user"]["housingIds"]
-            self.housing = res["housing"]
-            self.token = res["token"]
-            self.refresh_token = res["refresh_token"]
+            res = Auth.model_validate(await response.json())
+            self.user = res.user.userIdentifier
+            self.housings = res.user.housingIds
+            self.housing = res.housing
+            self.token = res.token
+            self.refresh_token = res.refresh_token
+            self.token_exp, self.token_iat = decode_jwt(self.token)
+
             self.token_exp, self.token_iat = decode_jwt(self.token)
 
             log.debug(
@@ -174,50 +190,50 @@ class MyConsoClient:
             return res
 
     @check_auth
-    async def get_user(self) -> dict:
+    async def get_user(self) -> User:
         async with self.session.get(f"/secured/users/{self.user}") as res:
-            return clean_json_ld(await res.json())
+            return User.model_validate(clean_json_ld(await res.json()))
 
     @check_auth
-    async def get_address(self, housing: str | None = None) -> dict:
+    async def get_address(self, housing: str | None = None) -> Address:
         housing = housing if housing else self.housing
         async with self.session.get(f"/secured/housing/{housing}/address") as res:
-            return clean_json_ld(await res.json())
+            return Address.model_validate(clean_json_ld(await res.json()))
 
     @check_auth
-    async def get_housings(self) -> dict:
+    async def get_housings(self) -> Housings:
         async with self.session.get(f"/secured/users/{self.user}/housings") as res:
-            return clean_json_ld(await res.json())
+            return Housings.model_validate(clean_json_ld(await res.json()))
 
     @check_auth
-    async def get_housing(self, housing: str | None = None) -> dict:
+    async def get_housing(self, housing: str | None = None) -> Housing:
         housing = housing if housing else self.housing
         async with self.session.get(f"/secured/housing/{housing}") as res:
-            return clean_json_ld(await res.json())
+            return Housing.model_validate(clean_json_ld(await res.json()))
 
     @check_auth
-    async def get_dashboard(self, housing: str | None = None) -> dict:
+    async def get_dashboard(self, housing: str | None = None) -> Dashboard:
         housing = housing if housing else self.housing
         async with self.session.get(f"/secured/consumption/{housing}/dashboard") as res:
-            return clean_json_ld(await res.json())
+            return Dashboard.model_validate(clean_json_ld(await res.json()))
 
     @check_auth
-    async def get_counters(self) -> list[dict]:
+    async def get_counters(self) -> Counter:
         if not self.counters:
             for housing in self.housings:
-                res = await self.get_dashboard(housing)
-                for v in res["currentMonth"]["values"]:
-                    for counter in v["counters"]:
+                dashboard = await self.get_dashboard(housing)
+                for v in dashboard.currentMonth.values:
+                    for counter in v.counters:
                         self.counters.append(
                             {
                                 "counter": counter,
-                                "fluidType": v["fluidType"],
-                                "meterType": v["meterType"],
-                                "unit": v["unit"],
+                                "fluidType": v.fluidType,
+                                "meterType": v.meterType,
+                                "unit": v.unit,
                                 "housing": housing,
                             }
                         )
-        return self.counters
+        return Counter.model_validate(self.counters)
 
     @check_auth
     async def get_consumption(
@@ -226,7 +242,7 @@ class MyConsoClient:
         housing: str | None = None,
         startdate: datetime | None = None,
         enddate: datetime | None = None,
-    ) -> dict | None:
+    ) -> Consumption:
         if not startdate:
             startdate = first_day_of_the_month()
         if not enddate:
@@ -240,22 +256,21 @@ class MyConsoClient:
                 "endDate": enddate.isoformat(timespec="milliseconds"),
             },
         ) as res:
-            return clean_json_ld(await res.json())
+            return Consumption.model_validate(clean_json_ld(await res.json()))
 
     @check_auth
     async def get_meter_info(
         self, counter: str, housing: str | None = None
-    ) -> dict | None:
-        if not self.counters:
-            await self.get_counters()
+    ) -> MeterInfo | None:
+        counters = await self.get_counters()
 
         housing = housing if housing else self.housing
-        for c in self.counters:
-            if c["counter"] == counter:
+        for c in counters.root:
+            if c.counter == counter:
                 async with self.session.get(
-                    f"/secured/meter/{housing}/{c['meterType']}/{c['counter']}/info",
+                    f"/secured/meter/{housing}/{c.meterType}/{c.counter}/info",
                 ) as res:
-                    return clean_json_ld(await res.json())
+                    return MeterInfo.model_validate(clean_json_ld(await res.json()))
         return None
 
     @check_auth
@@ -265,24 +280,23 @@ class MyConsoClient:
         housing: str | None = None,
         startdate: datetime | None = None,
         enddate: datetime | None = None,
-    ) -> dict | None:
+    ) -> Meter | None:
         if not startdate:
             startdate = first_day_of_the_month()
         if not enddate:
             enddate = last_day_of_the_month()
 
-        if not self.counters:
-            await self.get_counters()
+        counters = await self.get_counters()
 
         housing = housing if housing else self.housing
-        for c in self.counters:
-            if c["counter"] == counter:
+        for c in counters.root:
+            if c.counter == counter:
                 async with self.session.get(
-                    f"/secured/meter/{housing}/{c['meterType']}/{c['counter']}",
+                    f"/secured/meter/{housing}/{c.meterType}/{c.counter}",
                     params={
                         "startDate": startdate.isoformat(timespec="milliseconds"),
                         "endDate": enddate.isoformat(timespec="milliseconds"),
                     },
                 ) as res:
-                    return clean_json_ld(await res.json())
+                    return Meter.model_validate(clean_json_ld(await res.json()))
         return None

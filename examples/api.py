@@ -11,33 +11,41 @@ MYCONSO_PASSWORD = os.getenv("MYCONSO_PASSWORD")
 
 async def main():
     async with MyConsoClient(username=MYCONSO_EMAIL, password=MYCONSO_PASSWORD) as c:
-        pprint(await c.get_dashboard())
-        pprint(await c.get_housing())
+        pprint((await c.get_dashboard()).model_dump())
+        pprint((await c.get_housing()).model_dump())
 
-        ctrs = await c.get_counters()
-        pprint(ctrs)
+        counters = await c.get_counters()
+        pprint(counters.model_dump())
 
-        pprint(await c.get_meter_info(counter=ctrs[0]["counter"]))
+        if counters.root:
+            pprint(
+                (await c.get_meter_info(counter=counters.root[0].counter)).model_dump()
+            )
 
-        pprint(await c.get_consumption(fluidtype="waterHot"))
+        pprint((await c.get_consumption(fluidtype="waterHot")).model_dump())
 
         pprint(
-            await c.get_consumption(
-                fluidtype="waterHot",
-                startdate=datetime(2025, 12, 1),
-                enddate=datetime(2025, 12, 4),
-            )
+            (
+                await c.get_consumption(
+                    fluidtype="waterHot",
+                    startdate=datetime(2025, 12, 1),
+                    enddate=datetime(2025, 12, 4),
+                )
+            ).model_dump()
         )
 
-        pprint(await c.get_meter(counter=ctrs[0]["counter"]))
+        if counters.root:
+            pprint((await c.get_meter(counter=counters.root[0].counter)).model_dump())
 
-        pprint(
-            await c.get_meter(
-                counter=ctrs[0]["counter"],
-                startdate=datetime(2025, 12, 1),
-                enddate=datetime(2025, 12, 4),
+            pprint(
+                (
+                    await c.get_meter(
+                        counter=counters.root[0].counter,
+                        startdate=datetime(2025, 12, 1),
+                        enddate=datetime(2025, 12, 4),
+                    )
+                ).model_dump()
             )
-        )
 
 
 asyncio.run(main())
