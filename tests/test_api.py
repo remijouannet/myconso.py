@@ -15,6 +15,12 @@ MYCONSO_HOUSING = os.getenv("MYCONSO_HOUSING")
 MYCONSO_EMAIL = os.getenv("MYCONSO_EMAIL")
 MYCONSO_PASSWORD = os.getenv("MYCONSO_PASSWORD")
 
+# Skip all tests in this module if any variable is missing
+pytestmark = pytest.mark.skipif(
+    not (MYCONSO_EMAIL and MYCONSO_PASSWORD and MYCONSO_HOUSING),
+    reason="Missing MyConso environment variables",
+)
+
 
 class TestMyConsoClientClient:
     @pytest.mark.asyncio
