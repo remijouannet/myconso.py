@@ -1,10 +1,11 @@
 import calendar
 from datetime import datetime, timezone
+from typing import Any
 
 import jwt
 
 
-def clean_json_ld(obj: dict) -> dict:
+def clean_json_ld(obj: dict[str, Any]) -> dict[str, Any]:
     # json-ld add keys that starts with @
     # we don't need thoses, pop them
     if isinstance(obj, dict):

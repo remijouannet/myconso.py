@@ -166,11 +166,11 @@ async def cli() -> None:  # noqa: PLR0912
             if result:
                 print(json.dumps(result.model_dump(), indent=4))
         elif args.meter:
-            result = await myconso.get_meter(
+            meter_result = await myconso.get_meter(
                 args.meter, args.housing_id, args.start_date, args.end_date
             )
-            if result:
-                print(json.dumps(result.model_dump(), indent=4))
+            if meter_result:
+                print(json.dumps(meter_result.model_dump(), indent=4))
         elif args.consumption:
             print(
                 json.dumps(

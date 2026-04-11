@@ -76,5 +76,5 @@ select = [
 ]
 
 [tool.mypy]
-exclude = "tests/"
+exclude = "tests/*.py"
 files = "myconso/*.py"

@@ -18,7 +18,8 @@ repos:
   rev: v1.19.0
   hooks:
     - id: mypy
+      args: [--strict]
 - repo: https://github.com/shellcheck-py/shellcheck-py
   rev: v0.11.0.1
   hooks:
-    -   id: shellcheck
+    - id: shellcheck

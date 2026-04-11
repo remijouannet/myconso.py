@@ -1,8 +1,10 @@
 import asyncio
 import logging
 import time
+from collections.abc import Awaitable, Callable
 from datetime import datetime
 from types import TracebackType
+from typing import Any, Concatenate, ParamSpec, TypeVar
 
 from aiohttp import (
     ClientHandlerType,
@@ -11,6 +13,9 @@ from aiohttp import (
     ClientSession,
     DummyCookieJar,
 )
+
+P = ParamSpec("P")
+T = TypeVar("T")
 
 from myconso.middlewares import exponential_backoff_middleware
 
@@ -42,8 +47,10 @@ MYCONSO_USER_AGENT = "MyConso"
 TOKEN_EXP_DELAY = 10
 
 
-def check_auth(func):
-    async def wrapper(self, *args, **kwargs):
+def check_auth(
+    func: "Callable[Concatenate[MyConsoClient, P], Awaitable[T]]",
+) -> "Callable[Concatenate[MyConsoClient, P], Awaitable[T]]":
+    async def wrapper(self: MyConsoClient, /, *args: P.args, **kwargs: P.kwargs) -> T:
         if not self.token and (self.username and self.password):
             # class has been initialized with username/password
             async with self.lock:
@@ -62,7 +69,8 @@ class MyConsoClient:
     password: str | None
     token: str | None
     refresh_token: str | None
-    counters: list[dict]
+    counters: list[dict[str, Any]]
+    housing: str | None
     housings: list[str]
     user: str | None
 
