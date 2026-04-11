@@ -1,19 +1,27 @@
 from __future__ import annotations
 
-import asyncio
+from typing import ClassVar
+from unittest.mock import patch
+
 import pytest
-from aiohttp import web, ClientSession
+from aiohttp import ClientSession, web
 from aiohttp.client_exceptions import ClientResponseError
 from aiohttp.test_utils import AioHTTPTestCase
 
-import myconso.middlewares as middlewares
+from myconso import middlewares
+
+# HTTP status code constants for readability
+HTTP_OK = 200
+HTTP_TOO_MANY_REQUESTS = 429
+HTTP_SERVICE_UNAVAILABLE = 503
+EXPECTED_CALL_COUNT = 2
 
 
 class BaseBackoffTest(AioHTTPTestCase):
     """Base class providing common utilities for backoff tests."""
 
     # Override in subclasses with the sequence of status codes to return
-    status_sequence: list[int] = []
+    status_sequence: ClassVar[list[int]] = []
 
     async def get_application(self):
         self.call_index = 0
@@ -26,7 +34,7 @@ class BaseBackoffTest(AioHTTPTestCase):
                 status = self.status_sequence[idx]
             else:
                 status = self.status_sequence[-1]
-            if status == 200:
+            if status == HTTP_OK:
                 return web.json_response({"ok": True})
             return web.Response(status=status)
 
@@ -44,7 +52,7 @@ class BaseBackoffTest(AioHTTPTestCase):
 
 
 class TestExponentialBackoffNoRetry(BaseBackoffTest):
-    status_sequence = [200]
+    status_sequence: ClassVar[list[int]] = [HTTP_OK]
 
     @pytest.mark.asyncio
     async def test_no_retry(self):
@@ -52,7 +60,6 @@ class TestExponentialBackoffNoRetry(BaseBackoffTest):
             return
 
         # Patch asyncio.sleep to avoid real delays
-        from unittest.mock import patch
 
         with patch("asyncio.sleep", new=_sleep):
             async with await self._client_session() as session:
@@ -62,14 +69,12 @@ class TestExponentialBackoffNoRetry(BaseBackoffTest):
 
 
 class TestExponentialBackoffRetrySuccess(BaseBackoffTest):
-    status_sequence = [429, 200]
+    status_sequence: ClassVar[list[int]] = [HTTP_TOO_MANY_REQUESTS, HTTP_OK]
 
     @pytest.mark.asyncio
     async def test_retry_success(self):
         async def _sleep(delay: float):
             return
-
-        from unittest.mock import patch
 
         with patch("asyncio.sleep", new=_sleep):
             async with await self._client_session() as session:
@@ -77,24 +82,26 @@ class TestExponentialBackoffRetrySuccess(BaseBackoffTest):
                     data = await resp.json()
                     assert data["ok"] is True
                     # Ensure the handler was called twice (initial + one retry)
-                    assert self.call_index == 2
+
+                    assert self.call_index == EXPECTED_CALL_COUNT
 
 
 class TestExponentialBackoffRetryExhausted(BaseBackoffTest):
     # Three attempts (initial + 2 retries) all return a backoff status
-    status_sequence = [503, 503, 503]
+    status_sequence: ClassVar[list[int]] = [
+        HTTP_SERVICE_UNAVAILABLE,
+        HTTP_SERVICE_UNAVAILABLE,
+        HTTP_SERVICE_UNAVAILABLE,
+    ]
 
     @pytest.mark.asyncio
     async def test_retry_exhausted(self):
         async def _sleep(delay: float):
             return
 
-        from unittest.mock import patch
-
         with patch("asyncio.sleep", new=_sleep):
             async with await self._client_session() as session:
                 with pytest.raises(ClientResponseError) as exc_info:
                     await session.get("/test")
-                assert exc_info.value.status == 503
+                assert exc_info.value.status == HTTP_SERVICE_UNAVAILABLE
                 # Handler should have been called three times (initial + two retries)
-                assert self.call_index == 2

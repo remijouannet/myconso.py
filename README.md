@@ -6,7 +6,7 @@ Unofficial fully asynchronous API client for the myconso api behind the [Myconso
 ## Installation
 
 ```bash
-pip install myconso 
+pip install myconso
 ```
 
 ## Getting started

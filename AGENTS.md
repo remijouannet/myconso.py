@@ -260,19 +260,19 @@ To add custom middleware:
 1. Create middleware function in `myconso/middlewares.py`:
 ```python
 async def custom_middleware(
-    req: ClientRequest, 
+    req: ClientRequest,
     handler: ClientHandlerType
 ) -> ClientResponse:
     # Pre-processing
     req.headers["X-Custom-Header"] = "value"
-    
+
     # Call handler
     res = await handler(req)
-    
+
     # Post-processing
     if res.status == 418:  # I'm a teapot
         raise CustomError("Unexpected teapot")
-    
+
     return res
 ```
 
@@ -293,7 +293,7 @@ class TestMyEndpoint(AioHTTPTestCase):
     async def get_application(self):
         async def handler(request):
             return web.json_response({"data": "test"})
-        
+
         app = web.Application()
         app.router.add_get("/endpoint", handler)
         return app
@@ -343,18 +343,18 @@ MYCONSO_PASSWORD = os.getenv("MYCONSO_PASSWORD")
 
 async def main():
     async with MyConsoClient(
-        username=MYCONSO_EMAIL, 
+        username=MYCONSO_EMAIL,
         password=MYCONSO_PASSWORD
     ) as client:
         # Get user info
         user = await client.get_user()
         print(f"User: {user['email']}")
-        
+
         # Get consumption dashboard
         dashboard = await client.get_dashboard()
         for value in dashboard["currentMonth"]["values"]:
             print(f"{value['fluidType']}: {value['value']} {value['unit']}")
-        
+
         # List all counters
         counters = await client.get_counters()
         for counter in counters:
@@ -382,10 +382,10 @@ async def main():
             startdate=datetime(2025, 12, 1),
             enddate=datetime(2025, 12, 31)
         )
-        
+
         for reading in consumption.get("consumptionData", []):
             print(f"{reading['date']}: {reading['value']} m³")
-        
+
         # Get meter readings for a specific counter
         meter_data = await client.get_meter(
             counter="ED379533C5",
@@ -500,7 +500,7 @@ class TestAPI(AioHTTPTestCase):
     async def get_application(self):
         async def mock_handler(request):
             return web.json_response({"data": "test"})
-        
+
         app = web.Application()
         app.router.add_get("/endpoint", mock_handler)
         return app
@@ -517,7 +517,7 @@ class TestAPI(AioHTTPTestCase):
 async def test_exponential_backoff():
     # Create mock request/response
     from aiohttp import ClientRequest, ClientResponse
-    
+
     # Test retry logic on 429 responses
     # See tests/test_backoff.py for full example
 ```
@@ -585,5 +585,5 @@ uv run pre-commit run --all-files
 
 ---
 
-**Last Updated**: 2026-04-11  
+**Last Updated**: 2026-04-11
 **Agent Note**: When modifying this SDK, maintain async-first patterns, use type hints, and ensure all tests pass with `uv run pytest`.

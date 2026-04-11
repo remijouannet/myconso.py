@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import os
 import sys
+
 import pytest
 
 import myconso.cli as cli_mod
@@ -25,11 +26,11 @@ def run_cli(monkeypatch, capsys):
 
     def _run(args: list[str]):
         # Ensure the script name is present (argv[0])
-        monkeypatch.setattr(sys, "argv", ["myconsocli"] + args)
+        monkeypatch.setattr(sys, "argv", ["myconsocli", *args])
         # Execute the CLI entry point
         cli_mod.main()
         captured = capsys.readouterr()
-        # The CLI prints pretty‑printed JSON; parse it for assertions
+        # The CLI prints pretty-printed JSON; parse it for assertions
         return json.loads(captured.out)
 
     return _run

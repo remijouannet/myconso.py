@@ -1,11 +1,12 @@
 from __future__ import annotations
 
-import json
-import os
-import pytest
-import jwt
+from myconso import utils
 
-import myconso.utils as utils
+# Expected values for February 2025
+EXPECTED_LAST_DAY = 28
+EXPECTED_LAST_HOUR = 23
+EXPECTED_LAST_MINUTE = 59
+EXPECTED_LAST_SECOND = 59
 
 
 def test_clean_json_ld_removes_at_keys():
@@ -38,7 +39,8 @@ def test_first_and_last_day_of_month(monkeypatch):
     # Fixed datetime: 2025-02-15 12:34:56 UTC
     fixed_dt = utils.datetime(2025, 2, 15, 12, 34, 56, tzinfo=utils.timezone.utc)
 
-    # Create a simple wrapper class with a classmethod now() returning the fixed datetime
+    # Create a simple wrapper class
+    # with a classmethod now() returning the fixed datetime
     class FixedDateTime:
         @classmethod
         def now(cls, tz=None):
@@ -56,9 +58,9 @@ def test_first_and_last_day_of_month(monkeypatch):
 
     last = utils.last_day_of_the_month()
     # February 2025 has 28 days
-    assert last.day == 28
-    assert last.hour == 23
-    assert last.minute == 59
-    assert last.second == 59
+    assert last.day == EXPECTED_LAST_DAY
+    assert last.hour == EXPECTED_LAST_HOUR
+    assert last.minute == EXPECTED_LAST_MINUTE
+    assert last.second == EXPECTED_LAST_SECOND
     assert last.microsecond == 0
     assert last.tzinfo == utils.timezone.utc
