@@ -4,7 +4,6 @@ permissions:
   contents: read
 
 on:
-  pull_request:
   push:
     branches: [main]
 
@@ -39,4 +38,8 @@ jobs:
         run: uv run pre-commit run --show-diff-on-failure --color=always --all-files
 
       - name: Run tests
+        env:
+          MYCONSO_PASSWORD: ${{ secrets.MYCONSO_PASSWORD }}
+          MYCONSO_EMAIL: ${{ secrets.MYCONSO_EMAIL }}
+          MYCONSO_HOUSING: ${{ secrets.MYCONSO_HOUSING }}
         run: uv run pytest tests
