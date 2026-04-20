@@ -8,6 +8,10 @@ repos:
     - id: check-yaml
     - id: check-toml
     - id: check-added-large-files
+- repo: https://github.com/shellcheck-py/shellcheck-py
+  rev: v0.11.0.1
+  hooks:
+    - id: shellcheck
 - repo: https://github.com/astral-sh/ruff-pre-commit
   rev: v0.14.8
   hooks:
@@ -15,11 +19,10 @@ repos:
       args: [--fix]
     - id: ruff-format
 - repo: https://github.com/pre-commit/mirrors-mypy
-  rev: v1.19.0
+  rev: v1.20.1
   hooks:
     - id: mypy
-      args: [--strict]
-- repo: https://github.com/shellcheck-py/shellcheck-py
-  rev: v0.11.0.1
-  hooks:
-    - id: shellcheck
+      args: [--strict, --ignore-missing-imports, --scripts-are-modules]
+      additional_dependencies: ["aiohttp", "pydantic>=2.12.5", "pyjwt[crypto]"]
+      exclude: "^(tests/|examples/)$"
+      files: myconso/

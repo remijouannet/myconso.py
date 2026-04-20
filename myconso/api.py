@@ -14,9 +14,6 @@ from aiohttp import (
     DummyCookieJar,
 )
 
-P = ParamSpec("P")
-T = TypeVar("T")
-
 from myconso.middlewares import exponential_backoff_middleware
 
 # Typed models for API responses
@@ -38,6 +35,9 @@ from myconso.utils import (
     first_day_of_the_month,
     last_day_of_the_month,
 )
+
+P = ParamSpec("P")
+T = TypeVar("T")
 
 log = logging.getLogger(__name__)
 
