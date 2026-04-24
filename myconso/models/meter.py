@@ -11,7 +11,7 @@ class Index(BaseModel):
     date: str
     value: float
     fluidType: str
-    weightedValue: None
+    weightedValue: float | None
 
 
 class Meter(BaseModel):

@@ -20,7 +20,7 @@ class User(BaseModel):
     firstname: str
     lastname: str
     cgAcceptedAt: str
-    lastConnected: None
+    lastConnected: str | None
     isActive: bool
     mobileNotification: bool
     emailNotification: bool
@@ -32,8 +32,8 @@ class User(BaseModel):
     userDeviceTokens: list[str]
     housingIds: list[str]
     housingNames: list[str]
-    passwordResetCode: None
-    passwordResetLimitDate: None
+    passwordResetCode: str | None
+    passwordResetLimitDate: str | None
     createdAt: str
     updatedAt: str
 

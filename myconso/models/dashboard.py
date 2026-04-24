@@ -12,7 +12,7 @@ class Value(BaseModel):
     fluidType: str
     unit: str
     value: float
-    weightedValue: None
+    weightedValue: float | None
     minValue: float
     maxValue: float
     counters: list[str]
