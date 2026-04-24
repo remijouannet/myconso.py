@@ -11,6 +11,12 @@ log = logging.getLogger(__name__)
 
 
 async def cli() -> None:  # noqa: PLR0912
+    """Run the myconsocli command-line interface.
+
+    Parses command-line arguments and executes the requested Myconso API
+    operation (dashboard, counters, consumption, meter, etc.).
+
+    """
     parser = argparse.ArgumentParser(description="myconso cli")
     parser.add_argument(
         "--debug",
@@ -195,4 +201,9 @@ async def cli() -> None:  # noqa: PLR0912
 
 
 def main() -> None:
+    """Run the synchronous entrypoint for the CLI.
+
+    Invokes the async ``cli`` function using ``asyncio.run``.
+
+    """
     asyncio.run(cli())

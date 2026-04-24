@@ -50,6 +50,17 @@ TOKEN_EXP_DELAY = 10
 def check_auth(
     func: "Callable[Concatenate['MyConsoClient', P], Awaitable[T]]",
 ) -> "Callable[Concatenate['MyConsoClient', P], Awaitable[T]]":
+    """Ensure authentication is initiated or refreshed before calling
+    the wrapped method.
+
+    Args:
+        func: The async method to wrap.
+
+    Returns:
+        The wrapped method with authentication checks.
+
+    """
+
     async def wrapper(
         self: "MyConsoClient",
         /,
@@ -87,6 +98,20 @@ class MyConsoClient:
         refresh_token: str | None = None,
         refresh_middleware: bool = True,
     ) -> None:
+        """Initialize the API client with authentication parameters.
+
+        Args:
+            username: Account email for password-based authentication.
+            password: Account password for password-based authentication.
+            token: Existing JWT access token for token-based authentication.
+            refresh_token: Existing refresh token for token-based authentication.
+            refresh_middleware: Whether to enable automatic token refresh middleware.
+
+        Raises:
+            ValueError: If neither username/password nor token/refresh_token
+                are provided.
+
+        """
         if token and refresh_token:
             self.token = token
             self.token_exp, self.token_iat = decode_jwt(self.token)
@@ -122,6 +147,7 @@ class MyConsoClient:
         )
 
     async def __aenter__(self) -> "MyConsoClient":
+        """Enter the async context manager."""
         return self
 
     async def __aexit__(
@@ -130,14 +156,35 @@ class MyConsoClient:
         exc_value: BaseException | None,
         traceback: TracebackType | None,
     ) -> None:
+        """Exit the async context manager and close the session."""
         await self.close()
 
     async def close(self) -> None:
+        """Close the underlying aiohttp client session.
+
+        Returns:
+            None
+
+        """
         await self.session.close()
 
     async def _auth_refresh_middleware(
         self, req: ClientRequest, handler: ClientHandlerType
     ) -> ClientResponse:
+        """Refresh the access token if it has expired or is close to expiry.
+
+        This aiohttp middleware checks the JWT expiration before each request
+        and refreshes the token when needed before attaching the Authorization
+        header and forwarding the request.
+
+        Args:
+            req: The outgoing aiohttp client request.
+            handler: The next handler in the middleware chain.
+
+        Returns:
+            The aiohttp client response.
+
+        """
         epoch_now = time.time()
         token = self.token
         if epoch_now >= self.token_exp - TOKEN_EXP_DELAY:
@@ -157,6 +204,19 @@ class MyConsoClient:
         return res
 
     async def auth(self) -> Auth:
+        """Authenticate with username and password to obtain tokens.
+
+        Sends a POST request to /auth with the stored credentials and updates
+        the client state with the returned JWT token, refresh token, user
+        information, and default housing.
+
+        Returns:
+            The parsed authentication response.
+
+        Raises:
+            aiohttp.ClientResponseError: If the authentication request fails.
+
+        """
         async with self.session.post(
             "/auth",
             json={
@@ -178,6 +238,18 @@ class MyConsoClient:
             return res
 
     async def auth_refresh(self) -> Auth:
+        """Force a token refresh using the stored refresh token.
+
+        Sends a POST request to /auth/refresh and updates the client state
+        with the new JWT token, refresh token, and user information.
+
+        Returns:
+            The parsed authentication response containing the new tokens.
+
+        Raises:
+            aiohttp.ClientResponseError: If the refresh request fails.
+
+        """
         async with self.session.post(
             "/auth/refresh",
             json={
@@ -204,34 +276,85 @@ class MyConsoClient:
 
     @check_auth
     async def get_user(self) -> User:
+        """Retrieve information about the authenticated user.
+
+        Returns:
+            The user profile data.
+
+        """
         async with self.session.get(f"/secured/users/{self.user}") as res:
             return User.model_validate(clean_json_ld(await res.json()))
 
     @check_auth
     async def get_address(self, housing: str | None = None) -> Address:
+        """Retrieve the postal address for a given housing.
+
+        Args:
+            housing: The housing identifier. Defaults to the authenticated user's
+                default housing if not provided.
+
+        Returns:
+            The address data for the specified housing.
+
+        """
         housing = housing if housing else self.housing
         async with self.session.get(f"/secured/housing/{housing}/address") as res:
             return Address.model_validate(clean_json_ld(await res.json()))
 
     @check_auth
     async def get_housings(self) -> Housings:
+        """Retrieve all housings associated with the current user.
+
+        Returns:
+            A list of housings for the authenticated user.
+
+        """
         async with self.session.get(f"/secured/users/{self.user}/housings") as res:
             return Housings.model_validate(clean_json_ld(await res.json()))
 
     @check_auth
     async def get_housing(self, housing: str | None = None) -> Housing:
+        """Retrieve detailed information about a specific housing.
+
+        Args:
+            housing: The housing identifier. Defaults to the authenticated user's
+                default housing if not provided.
+
+        Returns:
+            The housing details.
+
+        """
         housing = housing if housing else self.housing
         async with self.session.get(f"/secured/housing/{housing}") as res:
             return Housing.model_validate(clean_json_ld(await res.json()))
 
     @check_auth
     async def get_dashboard(self, housing: str | None = None) -> Dashboard:
+        """Retrieve the consumption dashboard for a given housing.
+
+        Args:
+            housing: The housing identifier. Defaults to the authenticated user's
+                default housing if not provided.
+
+        Returns:
+            The dashboard data as displayed in the Myconso app.
+
+        """
         housing = housing if housing else self.housing
         async with self.session.get(f"/secured/consumption/{housing}/dashboard") as res:
             return Dashboard.model_validate(clean_json_ld(await res.json()))
 
     @check_auth
     async def get_counters(self) -> Counter:
+        """List all utility counters across every housing.
+
+        On the first call this method fetches the dashboard for each housing
+        and aggregates the counters. Subsequent calls return the cached list.
+
+        Returns:
+            A collection of counter items with fluid type, meter type, and unit.
+
+        """
         if not self.counters:
             for housing in self.housings:
                 dashboard = await self.get_dashboard(housing)
@@ -256,6 +379,21 @@ class MyConsoClient:
         startdate: datetime | None = None,
         enddate: datetime | None = None,
     ) -> Consumption:
+        """Retrieve daily consumption data for a given fluid type.
+
+        Args:
+            fluidtype: The type of fluid (e.g. "waterHot", "waterCold", "heating").
+            housing: The housing identifier. Defaults to the authenticated user's
+                default housing if not provided.
+            startdate: Start of the date range. Defaults to the first day of the
+                current month if omitted.
+            enddate: End of the date range. Defaults to the last day of the
+                current month if omitted.
+
+        Returns:
+            The consumption data aggregated per day.
+
+        """
         if not startdate:
             startdate = first_day_of_the_month()
         if not enddate:
@@ -275,6 +413,18 @@ class MyConsoClient:
     async def get_meter_info(
         self, counter: str, housing: str | None = None
     ) -> MeterInfo | None:
+        """Retrieve metadata information for a given counter.
+
+        Args:
+            counter: The counter identifier.
+            housing: The housing identifier. Defaults to the authenticated user's
+                default housing if not provided.
+
+        Returns:
+            The meter metadata (location, last value, data freshness) if the
+            counter is found, otherwise ``None``.
+
+        """
         counters = await self.get_counters()
 
         housing = housing if housing else self.housing
@@ -294,6 +444,24 @@ class MyConsoClient:
         startdate: datetime | None = None,
         enddate: datetime | None = None,
     ) -> Meter | None:
+        """Retrieve raw meter readings for a given counter over a date range.
+
+        By default the current month is returned when ``startdate`` and
+        ``enddate`` are omitted.
+
+        Args:
+            counter: The counter identifier.
+            housing: The housing identifier. Defaults to the authenticated user's
+                default housing if not provided.
+            startdate: Start of the date range. Defaults to the first day of the
+                current month if omitted.
+            enddate: End of the date range. Defaults to the last day of the
+                current month if omitted.
+
+        Returns:
+            The meter index data if the counter is found, otherwise ``None``.
+
+        """
         if not startdate:
             startdate = first_day_of_the_month()
         if not enddate:

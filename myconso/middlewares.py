@@ -16,6 +16,19 @@ BACKOFF_JITTER = 2
 async def exponential_backoff_middleware(
     req: ClientRequest, handler: ClientHandlerType
 ) -> ClientResponse:
+    """Retry HTTP requests when the API responds with 503 or 429 errors.
+
+    Implements exponential backoff with jitter to temporarily wait before
+    retrying a failed request.
+
+    Args:
+        req: The aiohttp client request being processed.
+        handler: The next handler in the middleware chain.
+
+    Returns:
+        The aiohttp client response (successful or final failed attempt).
+
+    """
     retry_count = 1
 
     res = await handler(req)
