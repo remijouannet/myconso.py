@@ -4,7 +4,7 @@ import time
 from collections.abc import Awaitable, Callable
 from datetime import datetime
 from types import TracebackType
-from typing import Any, Concatenate, ParamSpec, TypeVar
+from typing import Concatenate, ParamSpec, TypeVar
 
 from aiohttp import (
     ClientHandlerType,
@@ -85,10 +85,13 @@ class MyConsoClient:
     password: str | None
     token: str | None
     refresh_token: str | None
-    counters: list[dict[str, Any]]
+    token_exp: int
+    token_iat: int
+    counters: list[dict[str, str]]
     housing: str | None
     housings: list[str]
     user: str | None
+    lock: asyncio.Lock
 
     def __init__(
         self,

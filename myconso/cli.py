@@ -5,6 +5,7 @@ import json
 import logging
 
 from myconso.api import MyConsoClient
+from myconso.models import Meter, MeterInfo
 
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger(__name__)
@@ -131,7 +132,7 @@ async def cli() -> None:  # noqa: PLR0912
         help="end date for consumption and meter",
     )
 
-    args = parser.parse_args()
+    args: argparse.Namespace = parser.parse_args()
 
     if args.debug:
         logging.getLogger().setLevel(logging.DEBUG)
@@ -168,11 +169,13 @@ async def cli() -> None:  # noqa: PLR0912
                 )
             )
         elif args.meter_info:
-            result = await myconso.get_meter_info(args.meter_info, args.housing_id)
+            result: MeterInfo | None = await myconso.get_meter_info(
+                args.meter_info, args.housing_id
+            )
             if result:
                 print(json.dumps(result.model_dump(), indent=4))
         elif args.meter:
-            meter_result = await myconso.get_meter(
+            meter_result: Meter | None = await myconso.get_meter(
                 args.meter, args.housing_id, args.start_date, args.end_date
             )
             if meter_result:
