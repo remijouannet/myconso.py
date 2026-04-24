@@ -19,11 +19,7 @@ def clean_json_ld(obj: dict[str, Any]) -> dict[str, Any]:
         The dictionary with JSON-LD keys removed.
 
     """
-    if isinstance(obj, dict):
-        keys_to_pop = [key for key in obj if key.startswith("@")]
-        for key in keys_to_pop:
-            obj.pop(key, None)
-    return obj
+    return {k: v for k, v in obj.items() if not k.startswith("@")}
 
 
 def decode_jwt(token: str) -> tuple[int, int]:
@@ -52,10 +48,11 @@ def last_day_of_the_month() -> datetime:
         A datetime object set to 23:59:59 on the last day of the current month.
 
     """
-    return datetime.now(timezone.utc).replace(
+    dt_now = datetime.now(timezone.utc)
+    return dt_now.replace(
         day=calendar.monthrange(
-            datetime.now(timezone.utc).year,
-            datetime.now(timezone.utc).month,
+            dt_now.year,
+            dt_now.month,
         )[1],
         hour=23,
         minute=59,

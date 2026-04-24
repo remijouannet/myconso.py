@@ -11,7 +11,7 @@ EXPECTED_LAST_SECOND = 59
 
 def test_clean_json_ld_removes_at_keys():
     data = {"@id": "123", "@type": "Thing", "name": "test"}
-    cleaned = utils.clean_json_ld(data.copy())
+    cleaned = utils.clean_json_ld(data)
     assert "@id" not in cleaned
     assert "@type" not in cleaned
     assert cleaned == {"name": "test"}
@@ -19,7 +19,7 @@ def test_clean_json_ld_removes_at_keys():
 
 def test_clean_json_ld_no_at_keys():
     data = {"name": "test", "value": 42}
-    cleaned = utils.clean_json_ld(data.copy())
+    cleaned = utils.clean_json_ld(data)
     assert cleaned == data
 
 

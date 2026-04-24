@@ -78,7 +78,6 @@ async with self.lock:
 | Package | Purpose |
 |---------|---------|
 | `aiohttp` | Async HTTP client framework |
-| `aiohttp-retry>=2.9.1` | Retry logic utilities |
 | `pyjwt[crypto]` | JWT token encoding/decoding |
 
 ### Authentication Flow

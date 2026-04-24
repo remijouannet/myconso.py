@@ -11,9 +11,9 @@ packages = [
     { include = "myconso" }
 ]
 dependencies = [
-    "aiohttp",
+    "aiohttp==3.13.2",
     "pydantic>=2.12.5",
-    "pyjwt[crypto]",
+    "pyjwt[crypto]==2.10.1",
 ]
 
 [project.urls]
