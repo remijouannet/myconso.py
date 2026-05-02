@@ -2,14 +2,14 @@ from __future__ import annotations
 
 import logging
 import time
+import unittest.mock
 
 import pytest
-from aiohttp import ClientSession, web
+from aiohttp import web
 from aiohttp.client_exceptions import ClientResponseError
 from aiohttp.test_utils import AioHTTPTestCase
 
 from myconso.api import MyConsoClient
-from myconso.middlewares import exponential_backoff_middleware
 from tests.conftest import create_auth_response, create_dashboard_response
 
 logging.basicConfig(level=logging.DEBUG)
@@ -39,21 +39,13 @@ class TestMyConsoClientBackoff(AioHTTPTestCase):
         return app
 
     async def test_backoff(self):
-        async with MyConsoClient(username="aaa", password="aaaa") as c:
-            # close the existing session before create a new one
-            await c.session.close()
-            c.session = ClientSession(
-                base_url=self.client.make_url(""),
-                headers={"user-agent": "aaa"},
-                raise_for_status=True,
-                middlewares=(
-                    c._auth_refresh_middleware,
-                    exponential_backoff_middleware,
-                ),
-            )
-            with pytest.raises(ClientResponseError) as exc_info:
-                await c.get_dashboard()
-            assert exc_info.value.status == web.HTTPTooManyRequests.status_code
+        with unittest.mock.patch(
+            "myconso.api.MYCONSO_API", str(self.client.make_url(""))
+        ):
+            async with MyConsoClient(username="aaa", password="aaaa") as c:
+                with pytest.raises(ClientResponseError) as exc_info:
+                    await c.get_dashboard()
+                assert exc_info.value.status == web.HTTPTooManyRequests.status_code
 
-            res = await c.get_dashboard()
-            assert hasattr(res.currentMonth, "startDate")
+                res = await c.get_dashboard()
+                assert hasattr(res.currentMonth, "startDate")

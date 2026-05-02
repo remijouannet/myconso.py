@@ -2,12 +2,12 @@ from __future__ import annotations
 
 import asyncio
 import time
+import unittest.mock
 
-from aiohttp import ClientSession, web
+from aiohttp import web
 from aiohttp.test_utils import AioHTTPTestCase
 
 from myconso.api import MyConsoClient
-from myconso.middlewares import exponential_backoff_middleware
 from tests.conftest import (
     create_auth_response,
     create_dashboard_response,
@@ -48,68 +48,44 @@ class TestMyConsoClientBackoff(AioHTTPTestCase):
         return app
 
     async def test_refresh_token_1(self):
-        async with MyConsoClient(username="aaa", password="aaaa") as c:
-            # close the existing session before creating a new one
-            await c.session.close()
-            c.session = ClientSession(
-                base_url=self.client.make_url(""),
-                headers={"user-agent": "aaa"},
-                raise_for_status=True,
-                middlewares=(
-                    c._auth_refresh_middleware,
-                    exponential_backoff_middleware,
-                ),
-            )
-            res = await c.get_dashboard()
-            assert hasattr(res.currentMonth, "startDate")
+        with unittest.mock.patch(
+            "myconso.api.MYCONSO_API", str(self.client.make_url(""))
+        ):
+            async with MyConsoClient(username="aaa", password="aaaa") as c:
+                res = await c.get_dashboard()
+                assert hasattr(res.currentMonth, "startDate")
 
     async def test_refresh_token_2(self):
-        async with MyConsoClient(username="aaa", password="aaaa") as c:
-            # close the existing session before creating a new one
-            await c.session.close()
-            c.session = ClientSession(
-                base_url=self.client.make_url(""),
-                headers={"user-agent": "aaa"},
-                raise_for_status=True,
-                middlewares=(
-                    c._auth_refresh_middleware,
-                    exponential_backoff_middleware,
-                ),
-            )
-            res = await c.get_dashboard()
-            assert hasattr(res.currentMonth, "startDate")
+        with unittest.mock.patch(
+            "myconso.api.MYCONSO_API", str(self.client.make_url(""))
+        ):
+            async with MyConsoClient(username="aaa", password="aaaa") as c:
+                res = await c.get_dashboard()
+                assert hasattr(res.currentMonth, "startDate")
 
-            await asyncio.sleep(4)
+                await asyncio.sleep(4)
 
-            res = await c.get_dashboard()
-            assert hasattr(res.currentMonth, "startDate")
+                res = await c.get_dashboard()
+                assert hasattr(res.currentMonth, "startDate")
 
-            await asyncio.sleep(4)
+                await asyncio.sleep(4)
 
-            res = await c.get_dashboard()
-            assert hasattr(res.currentMonth, "startDate")
+                res = await c.get_dashboard()
+                assert hasattr(res.currentMonth, "startDate")
 
     async def test_refresh_token_4(self):
-        async with MyConsoClient(username="aaa", password="aaaa") as c:
-            # close the existing session before creating a new one
-            await c.session.close()
-            c.session = ClientSession(
-                base_url=self.client.make_url(""),
-                headers={"user-agent": "aaa"},
-                raise_for_status=True,
-                middlewares=(
-                    c._auth_refresh_middleware,
-                    exponential_backoff_middleware,
-                ),
-            )
-            res = await c.get_housing()
-            assert res.housingId == "7552325423"
+        with unittest.mock.patch(
+            "myconso.api.MYCONSO_API", str(self.client.make_url(""))
+        ):
+            async with MyConsoClient(username="aaa", password="aaaa") as c:
+                res = await c.get_housing()
+                assert res.housingId == "7552325423"
 
-            token1 = c.token
+                token1 = c.token
 
-            await asyncio.sleep(4)
+                await asyncio.sleep(4)
 
-            assert token1 == c.token
-            res = await c.get_housing()
-            assert token1 != c.token
-            assert res.housingId == "7552325423"
+                assert token1 == c.token
+                res = await c.get_housing()
+                assert token1 != c.token
+                assert res.housingId == "7552325423"
