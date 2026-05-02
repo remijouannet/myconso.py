@@ -12,14 +12,14 @@ import pytest
 
 from myconso.api import MyConsoClient
 from myconso.models import (
+    Address,
     Consumption,
     Counter,
     Dashboard,
+    Housings,
     Meter,
     MeterInfo,
     User,
-    Address,
-    Housings
 )
 
 MYCONSO_HOUSING = os.getenv("MYCONSO_HOUSING")
@@ -52,6 +52,7 @@ async def test_get_dashboard():
         assert hasattr(dashboard.currentMonth, "startDate")
         assert hasattr(dashboard.lastMonth, "startDate")
 
+
 @pytest.mark.asyncio
 async def test_get_address():
     async with MyConsoClient(username=MYCONSO_EMAIL, password=MYCONSO_PASSWORD) as c:
@@ -59,6 +60,7 @@ async def test_get_address():
         address = await c.get_address()
         assert isinstance(address, Address)
         assert hasattr(address, "name")
+
 
 @pytest.mark.asyncio
 async def test_get_housings():
