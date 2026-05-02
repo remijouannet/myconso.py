@@ -8,8 +8,6 @@ from pydantic import BaseModel
 
 
 class MemberItem(BaseModel):
-    field_id: str
-    field_type: str
     housingId: str
     name: str
     created_date: str

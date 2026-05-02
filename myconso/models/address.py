@@ -8,8 +8,6 @@ from pydantic import BaseModel
 
 
 class Address1(BaseModel):
-    field_type: str
-    field_id: str
     coOwnershipName: str
     floor: str
     number: str

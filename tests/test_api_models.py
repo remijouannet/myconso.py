@@ -18,6 +18,8 @@ from myconso.models import (
     Meter,
     MeterInfo,
     User,
+    Address,
+    Housings
 )
 
 MYCONSO_HOUSING = os.getenv("MYCONSO_HOUSING")
@@ -49,6 +51,22 @@ async def test_get_dashboard():
         # Verify nested structure has expected attributes
         assert hasattr(dashboard.currentMonth, "startDate")
         assert hasattr(dashboard.lastMonth, "startDate")
+
+@pytest.mark.asyncio
+async def test_get_address():
+    async with MyConsoClient(username=MYCONSO_EMAIL, password=MYCONSO_PASSWORD) as c:
+        await c.auth()
+        address = await c.get_address()
+        assert isinstance(address, Address)
+        assert hasattr(address, "name")
+
+@pytest.mark.asyncio
+async def test_get_housings():
+    async with MyConsoClient(username=MYCONSO_EMAIL, password=MYCONSO_PASSWORD) as c:
+        await c.auth()
+        housings = await c.get_housings()
+        assert isinstance(housings, Housings)
+        assert hasattr(housings, "member")
 
 
 @pytest.mark.asyncio
