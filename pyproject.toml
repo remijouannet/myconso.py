@@ -1,6 +1,6 @@
 [project]
 name = "myconso"
-version = "0.0.13"
+version = "0.0.14"
 description = "Async Python client to interact with myconso.net API"
 readme = "README.md"
 authors = [
@@ -13,7 +13,7 @@ packages = [
 dependencies = [
     "aiohttp>=3.13.3",
     "pydantic>=2.12.2",
-    "pyjwt[crypto]==2.10.1",
+    "pyjwt[crypto]>=2.10.1",
 ]
 
 [project.urls]
