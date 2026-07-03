@@ -8,11 +8,11 @@ from pydantic import BaseModel
 
 
 class Consumption1(BaseModel):
-    date: str
-    value: float
-    minValue: float
-    maxValue: float
-    weightedValue: float
+    date: str | None = None
+    value: float | None = None
+    minValue: float | None = None
+    maxValue: float | None = None
+    weightedValue: float | None = None
 
 
 class Consumption(BaseModel):

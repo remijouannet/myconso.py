@@ -11,16 +11,16 @@ class Value(BaseModel):
     meterType: str
     fluidType: str
     unit: str
-    value: float
-    weightedValue: float | None
-    minValue: float
-    maxValue: float
+    value: float | None = None
+    weightedValue: float | None = None
+    minValue: float | None = None
+    maxValue: float | None = None
     counters: list[str]
 
 
 class CurrentMonth(BaseModel):
     startDate: str
-    endDate: str
+    endDate: str | None = None
     values: list[Value]
 
 
