@@ -268,8 +268,6 @@ class MyConsoClient:
             self.refresh_token = res.refresh_token
             self.token_exp, self.token_iat = decode_jwt(self.token)
 
-            self.token_exp, self.token_iat = decode_jwt(self.token)
-
             log.debug(
                 "successful refresh authentification for housing: %s",
                 self.housing,
