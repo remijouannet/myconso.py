@@ -1,5 +1,6 @@
-from myconso.api import MyConsoClient
 import importlib.metadata
+
+from myconso.api import MyConsoClient
 
 try:
     __version__ = importlib.metadata.version("myconso")  # the [project] name
