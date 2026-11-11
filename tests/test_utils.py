@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import jwt
+
 from myconso import utils
 
 # Expected values for February 2025
@@ -23,14 +25,9 @@ def test_clean_json_ld_no_at_keys():
     assert cleaned == data
 
 
-def test_decode_jwt_monkeypatch(monkeypatch):
+def test_decode_jwt():
     payload = {"exp": 12345, "iat": 67890}
-
-    def fake_decode(*args, **kwargs):
-        return payload
-
-    monkeypatch.setattr(utils.jwt, "decode", fake_decode)
-    exp, iat = utils.decode_jwt("dummy-token")
+    exp, iat = utils.decode_jwt(jwt.encode(payload, "secret", algorithm="HS256"))
     assert exp == payload["exp"]
     assert iat == payload["iat"]
 
